@@ -141,7 +141,8 @@ vdem$dem_spell_outcome[i] <-
 vdem$dem_spell_outcome <- as.factor(vdem$dem_spell_outcome)
 summary(vdem$dem_spell_outcome)
 
-##identify consolidation threshold
+##identify reasonable thresholds for consolidation
+###chart outcomes by polyarchy height
 vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
   group_by(polyarchy_cohort = round(v2x_polyarchy, digits = 2)) %>%
   mutate(outcome_rate = sum(dem_spell_outcome == 'democracy') / n()) %>%
@@ -149,11 +150,138 @@ vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
   geom_point()+
   geom_smooth()
 
+###chart outcome by democracy spell length
+vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
+  group_by(dem_spell_running) %>%
+  mutate(outcome_rate = sum(dem_spell_outcome == 'democracy') / n()) %>%
+  ggplot(aes(x = dem_spell_running, y = outcome_rate))+
+  geom_line()+
+  coord_cartesian(xlim = c(0,70))
+
+###confirm that just over half of all democracy spells lasted
+vdem %>% filter(dem_spell_running == 0) %>%
+  summarize(count = n(), 
+            stayed_democracies = sum(dem_spell_outcome == 'democracy'),
+            success_rate = stayed_democracies/count)
+
+###compare vdem high level indexes
+ ###the four other varieties of democracy tend to score lower than polyarchy
+vdem %>% filter(v2x_polyarchy >= dem_threshold) %>% 
+  summarize(polyarchy = mean(v2x_polyarchy),
+            liberal = mean(v2x_libdem, na.rm = TRUE),
+            participatory = mean(v2x_partipdem, na.rm = TRUE),
+            deliberative = mean(v2x_delibdem, na.rm = TRUE),
+            egalitarian = mean(v2x_egaldem, na.rm = TRUE))
+
+vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
+  group_by(libdem_cohort = round(v2x_libdem, digits = 2)) %>%
+  mutate(outcome_rate = sum(dem_spell_outcome == 'democracy') / n()) %>%
+  ggplot(aes(x = libdem_cohort, y = outcome_rate))+
+  geom_point()+
+  geom_smooth()+
+  coord_cartesian(ylim = c(0,1))+
+  scale_y_continuous(minor_breaks = seq(from = 0, to = 1, by = 0.1),
+                     breaks = c(0,1))+
+  geom_hline(yintercept = 0.5)+
+  geom_hline(yintercept = 0.8)
+
+vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
+  group_by(partipdem_cohort = round(v2x_partipdem, digits = 2)) %>%
+  mutate(outcome_rate = sum(dem_spell_outcome == 'democracy') / n()) %>%
+  ggplot(aes(x = partipdem_cohort, y = outcome_rate))+
+  geom_point()+
+  geom_smooth()+
+  coord_cartesian(ylim = c(0,1))+
+  scale_y_continuous(minor_breaks = seq(from = 0, to = 1, by = 0.1),
+                     breaks = c(0,0.5,1))+
+  geom_hline(yintercept = 0.5)+
+  geom_hline(yintercept = 0.8)
+
+vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
+  group_by(delibdem_cohort = round(v2x_delibdem, digits = 2)) %>%
+  mutate(outcome_rate = sum(dem_spell_outcome == 'democracy') / n()) %>%
+  ggplot(aes(x = delibdem_cohort, y = outcome_rate))+
+  geom_point()+
+  geom_smooth()+
+  coord_cartesian(ylim = c(0,1))+
+  scale_y_continuous(minor_breaks = seq(from = 0, to = 1, by = 0.1),
+                     breaks = c(0,0.5,1))+
+  geom_hline(yintercept = 0.5)+
+  geom_hline(yintercept = 0.8)
+
+vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
+  group_by(egaldem_cohort = round(v2x_egaldem, digits = 2)) %>%
+  mutate(outcome_rate = sum(dem_spell_outcome == 'democracy') / n()) %>%
+  ggplot(aes(x = egaldem_cohort, y = outcome_rate))+
+  geom_point()+
+  geom_smooth()+
+  coord_cartesian(ylim = c(0,1))+
+  scale_y_continuous(minor_breaks = seq(from = 0, to = 1, by = 0.1),
+                     breaks = c(0,0.5,1))+
+  geom_hline(yintercept = 0.5)+
+  geom_hline(yintercept = 0.8)
+
+###calculate survival rate for democracies scoring well on all indexes
+vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
+  group_by(v2x_libdem >= dem_threshold &
+             v2x_partipdem >= dem_threshold & 
+             v2x_delibdem >= dem_threshold & 
+             v2x_egaldem >= dem_threshold) %>%
+  summarize(count = n(), 
+            stayed_democracies = sum(dem_spell_outcome == 'democracy'),
+            success_rate = stayed_democracies/count)
+
+####list all democratic spells that ever crossed all thresholds in same year
+broad_dem_spell_list <- vdem %>% 
+  filter(v2x_polyarchy >= dem_threshold,
+         v2x_libdem >= dem_threshold &
+           v2x_partipdem >= dem_threshold & 
+           v2x_delibdem >= dem_threshold & 
+           v2x_egaldem >= dem_threshold) %>%
+  distinct(dem_spell_name) %>%
+  pull(dem_spell_name)
+
+####calculate survival rate predicted by whether broad democracy
+vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
+  distinct(dem_spell_name, .keep_all = TRUE)  %>%
+  group_by(broad_dem = dem_spell_name %in% broad_dem_spell_list) %>%
+  summarize(stayed_democratic = sum(dem_spell_outcome == 'democracy'),
+            count = n(),
+            survival_rate = stayed_democratic / count)
+
+####repeat process using individual thresholds predicting 80% survival
+ ####results are not very different - similar split of cases
+high_broad_dem_spell_list <- vdem %>% 
+  filter(v2x_polyarchy >= 0.76,
+         v2x_libdem >= 0.61 &
+           v2x_partipdem >= 0.50 & 
+           v2x_delibdem >= 0.59 & 
+           v2x_egaldem >= 0.56) %>%
+  distinct(dem_spell_name) %>%
+  pull(dem_spell_name)
+
+vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
+  distinct(dem_spell_name, .keep_all = TRUE)  %>%
+  group_by(high_broad_dem = dem_spell_name %in% high_broad_dem_spell_list) %>%
+  summarize(stayed_democratic = sum(dem_spell_outcome == 'democracy'),
+            count = n(),
+            survival_rate = stayed_democratic / count)
+
 
 ##how to identify consolidation? 
  ##minimum polyarchy threshold? perhaps look for discontinuities in polyarchy peak among all that ever eroded.
- ##robust across multiple vdem high level indexes?
+  ###polyarchy score of 0.76 predicts better than 80% chance of surviving
+  ###polyarchy score of 0.58 predicts better than 50% chance of surviving
  ##longevity threshold, perhaps empirically derived from survival distribution?
+  ###20 years predicts at least 80% chance of surviving
+  ###0 years predicts better than 50% chance of surviving
+ ##robust across multiple vdem high level indexes?
+  ###libdem: 80% threshold is 0.61; 50% threshold is 0.46
+  ###partipdem: 80% threshold is 0.50; 50% threshold is 0.34
+  ###delibdem: 80% threshold is 0.59; 50% threshold is 0.51
+  ###egaldem: 80% threshold is 0.56; 50% threshold is 0.40
+
+ 
  ##some combination?
  ##or come at it backwards, as requiring two-step erosion? would then be identifying a phenomenon, not a dependent variable.
 
