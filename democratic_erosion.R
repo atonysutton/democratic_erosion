@@ -28,10 +28,11 @@ vdem <- vdem %>% filter(!is.na(v2x_polyarchy))
 skimr::skim(vdem)
 
 #set arbitrary thresholds
-dem_threshold = 0.5
-survival_threshold = 0.8
+dem_threshold = 0.5 #on vdem's 1-point scales
+survival_threshold = 0.8 #as a probability
+erosion_threshold = 1 #as multiple of standard deviations
 
-#identify consolidated democracies ----
+#situate country-years within democratic spells ----
 
 ##label democratization and autocratization, which define spells
  ###create empty variables
@@ -142,8 +143,32 @@ vdem$dem_spell_outcome[i] <-
 vdem$dem_spell_outcome <- as.factor(vdem$dem_spell_outcome)
 summary(vdem$dem_spell_outcome)
 
-##identify reasonable thresholds for consolidation
-###chart outcomes by polyarchy height
+##note length of spells at autocratization or last year of data
+vdem <- vdem %>%
+  group_by(dem_spell_name) %>%
+  mutate(dem_spell_length = max(dem_spell_running)) %>%
+  ungroup()
+summary(vdem$dem_spell_length)
+
+#identify consolidated democracies ----
+
+##how to identify consolidation? 
+##minimum polyarchy threshold? perhaps look for discontinuities in polyarchy peak among all that ever eroded.
+###polyarchy score of 0.76 predicts better than 80% chance of surviving
+###polyarchy score of 0.58 predicts better than 50% chance of surviving
+##longevity threshold, perhaps empirically derived from survival distribution?
+###20 years predicts at least 80% chance of surviving
+###0 years predicts better than 50% chance of surviving
+##robust across multiple vdem high level indexes?
+###libdem: 80% threshold is 0.61; 50% threshold is 0.46
+###partipdem: 80% threshold is 0.50; 50% threshold is 0.34
+###delibdem: 80% threshold is 0.59; 50% threshold is 0.51
+###egaldem: 80% threshold is 0.56; 50% threshold is 0.40
+##some combination?
+##or come at it backwards, as requiring two-step erosion? would then be identifying a phenomenon, not a dependent variable.
+
+
+##chart outcomes by polyarchy height
 vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
   group_by(polyarchy_cohort = round(v2x_polyarchy, digits = 2)) %>%
   mutate(outcome_rate = sum(dem_spell_outcome == 'democracy') / n()) %>%
@@ -151,7 +176,7 @@ vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
   geom_point()+
   geom_smooth()
 
-###calculate minimum polyarchy to predict survival above threshold
+##calculate minimum polyarchy to predict survival above threshold
 height_threshold <- vdem %>% 
   filter(v2x_polyarchy >= dem_threshold) %>%
   group_by(polyarchy_cohort = round(v2x_polyarchy, digits = 2)) %>%
@@ -160,7 +185,7 @@ height_threshold <- vdem %>%
   summarize(last_cohort = max(polyarchy_cohort)) %>%
   pull(last_cohort) + 0.01
   
-###chart outcome by democracy spell length
+##chart outcome by democracy spell length
 vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
   group_by(dem_spell_running) %>%
   mutate(outcome_rate = sum(dem_spell_outcome == 'democracy') / n()) %>%
@@ -168,13 +193,13 @@ vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
   geom_line()+
   coord_cartesian(xlim = c(0,70))
 
-###confirm that just over half of all democracy spells lasted
+##confirm that just over half of all democracy spells lasted
 vdem %>% filter(dem_spell_running == 0) %>%
   summarize(count = n(), 
             stayed_democracies = sum(dem_spell_outcome == 'democracy'),
             survival_rate = stayed_democracies/count)
 
-###calculate minimum spell length to predict survival above threshold
+##calculate minimum spell length to predict survival above threshold
 length_threshold <- vdem %>% 
   filter(v2x_polyarchy >= dem_threshold) %>%
   group_by(dem_spell_running) %>%
@@ -183,8 +208,8 @@ length_threshold <- vdem %>%
   summarize(last_cohort = max(dem_spell_running)) %>%
   pull(last_cohort) + 1
 
-###compare vdem high level indexes
- ###the four other varieties of democracy tend to score lower than polyarchy
+##compare vdem high level indexes
+ ##the four other varieties of democracy tend to score lower than polyarchy
 vdem %>% filter(v2x_polyarchy >= dem_threshold) %>% 
   summarize(polyarchy = mean(v2x_polyarchy),
             liberal = mean(v2x_libdem, na.rm = TRUE),
@@ -240,7 +265,7 @@ vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
   geom_hline(yintercept = 0.5)+
   geom_hline(yintercept = 0.8)
 
-###calculate survival rate for democracies scoring well on all indexes
+##calculate survival rate for democracies scoring well on all indexes
 vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
   group_by(v2x_libdem >= dem_threshold &
              v2x_partipdem >= dem_threshold & 
@@ -250,7 +275,7 @@ vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
             stayed_democracies = sum(dem_spell_outcome == 'democracy'),
             success_rate = stayed_democracies/count)
 
-####list all democratic spells that ever crossed all thresholds in same year
+###list all democratic spells that ever crossed all thresholds in same year
 broad_dem_spell_list <- vdem %>% 
   filter(v2x_polyarchy >= dem_threshold,
          v2x_libdem >= dem_threshold &
@@ -260,7 +285,7 @@ broad_dem_spell_list <- vdem %>%
   distinct(dem_spell_name) %>%
   pull(dem_spell_name)
 
-####calculate survival rate predicted by whether broad democracy
+###calculate survival rate predicted by whether broad democracy
 vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
   distinct(dem_spell_name, .keep_all = TRUE)  %>%
   group_by(broad_dem = dem_spell_name %in% broad_dem_spell_list) %>%
@@ -268,8 +293,8 @@ vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
             count = n(),
             survival_rate = stayed_democratic / count)
 
-####repeat process using individual thresholds predicting 80% survival
- ####results are not very different - similar split of cases
+###repeat process using individual thresholds predicting 80% survival
+ ###results are not very different - similar split of cases
 high_broad_dem_spell_list <- vdem %>% 
   filter(v2x_polyarchy >= 0.76,
          v2x_libdem >= 0.61 &
@@ -308,33 +333,23 @@ vdem$consolidated_broad <- case_when(vdem$v2x_polyarchy < dem_threshold ~ as.log
                                      TRUE ~ FALSE)
 summary(vdem$consolidated_broad)
 
-###examine overlap among consolidation measures
+##examine overlap among consolidation measures
 vdem %>% select(consolidated_long, consolidated_high, consolidated_broad) %>%
   na.omit() %>% 
   cor()
 
-##how to identify consolidation? 
- ##minimum polyarchy threshold? perhaps look for discontinuities in polyarchy peak among all that ever eroded.
-  ###polyarchy score of 0.76 predicts better than 80% chance of surviving
-  ###polyarchy score of 0.58 predicts better than 50% chance of surviving
- ##longevity threshold, perhaps empirically derived from survival distribution?
-  ###20 years predicts at least 80% chance of surviving
-  ###0 years predicts better than 50% chance of surviving
- ##robust across multiple vdem high level indexes?
-  ###libdem: 80% threshold is 0.61; 50% threshold is 0.46
-  ###partipdem: 80% threshold is 0.50; 50% threshold is 0.34
-  ###delibdem: 80% threshold is 0.59; 50% threshold is 0.51
-  ###egaldem: 80% threshold is 0.56; 50% threshold is 0.40
+##label erosion as any democratic country-year  
+ ##with polyarchy score at least X times 1 standard deviations below spell peak
+ ##where X is an arbitrarily defined multiple,
+ ##and so long as the spell ever peaked high enough to erode without autocratizing 
+vdem$erode <- case_when(vdem$v2x_polyarchy < dem_threshold ~ as.logical(NA),
+                        vdem$dem_spell_peak < (dem_threshold + (erosion_threshold * sd(vdem$v2x_polyarchy[vdem$v2x_polyarchy >= dem_threshold]))) ~ as.logical(NA),
+                        vdem$dem_spell_peak - vdem$v2x_polyarchy >= (erosion_threshold * sd(vdem$v2x_polyarchy[vdem$v2x_polyarchy >= dem_threshold])) ~ TRUE,
+                        TRUE ~ FALSE)
+summary(vdem$erode)
+vdem %>% filter(erode == TRUE) %>% group_by(dem_spell_outcome) %>% summarize(n())
 
- 
- ##some combination?
- ##or come at it backwards, as requiring two-step erosion? would then be identifying a phenomenon, not a dependent variable.
-
-
-
-##of consolidated pool, label whether later eroded
-
-#test whether theorized factors predict later erosion ----
+#predict eventual autocratization or erosion ----
 
 ##clientelism
 
