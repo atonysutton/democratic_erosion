@@ -338,6 +338,17 @@ vdem %>% select(consolidated_long, consolidated_high, consolidated_broad) %>%
   na.omit() %>% 
   cor()
 
+##create a variable for combined consolidation
+vdem$consolidated_lhb <- case_when(vdem$v2x_polyarchy < dem_threshold ~ as.logical(NA),
+                                   (vdem$consolidated_long == TRUE &
+                                      vdem$consolidated_high == TRUE &
+                                      vdem$consolidated_broad == TRUE) ~ TRUE,
+                                   TRUE ~ FALSE)
+summary(vdem$consolidated_lhb)
+vdem %>% filter(consolidated_lhb == TRUE) %>% 
+  distinct(dem_spell_name) %>% 
+  summarize(count = n())
+
 ##label erosion as any democratic country-year  
  ##with polyarchy score at least X times 1 standard deviations below spell peak
  ##where X is an arbitrarily defined multiple,
@@ -347,14 +358,64 @@ vdem$erode <- case_when(vdem$v2x_polyarchy < dem_threshold ~ as.logical(NA),
                         vdem$dem_spell_peak - vdem$v2x_polyarchy >= (erosion_threshold * sd(vdem$v2x_polyarchy[vdem$v2x_polyarchy >= dem_threshold])) ~ TRUE,
                         TRUE ~ FALSE)
 summary(vdem$erode)
-vdem %>% filter(erode == TRUE) %>% group_by(dem_spell_outcome) %>% summarize(n())
+vdem %>% filter(erode == TRUE) %>%
+  group_by(dem_spell_outcome) %>% 
+  summarize(count = n())
+
+##review available cases against which to build predictive models 
+###examine cases where consolidated regime autocratized
+ ###note that some (eg Denmark 1902) ended in foreign occupation
+vdem %>% filter(consolidated_lhb == TRUE, dem_spell_outcome == 'autocracy') %>% 
+  distinct(dem_spell_name)
+vdem %>% filter(consolidated_long == TRUE, dem_spell_outcome == 'autocracy') %>% 
+  distinct(dem_spell_name)
+vdem %>% filter(consolidated_high == TRUE, dem_spell_outcome == 'autocracy') %>% 
+  distinct(dem_spell_name)
+vdem %>% filter(consolidated_broad == TRUE, dem_spell_outcome == 'autocracy') %>% 
+  distinct(dem_spell_name)
+  
+###examine cases where consolidated regime eroded
+vdem %>% filter(consolidated_lhb == TRUE, erode == TRUE) %>% 
+  distinct(dem_spell_name)
+vdem %>% filter(consolidated_long == TRUE, erode == TRUE) %>% 
+  distinct(dem_spell_name)
+vdem %>% filter(consolidated_high == TRUE, erode == TRUE) %>% 
+  distinct(dem_spell_name)
+vdem %>% filter(consolidated_broad == TRUE, erode == TRUE) %>% 
+  distinct(dem_spell_name)
+
 
 #predict eventual autocratization or erosion ----
 
+
+
 ##clientelism
+summary(vdem$v2xnp_client) #clientelism indes, rolls up other two plus additional variables
+summary(vdem$v2psprlnks) #how parties link to constituents
+summary(vdem$v2dlencmps) #particularistic social spending
+
+vdem %>% select(v2xnp_client, v2psprlnks, v2dlencmps) %>%
+  na.omit() %>% 
+  cor()
 
 ##information control
+summary(vdem$v2smonex) # online media consumption
+summary(vdem$v2smmefra) # online media fractionalization
+summary(vdem$v2smgovdom) # government disseminates false info
+summary(vdem$v2smpardom) # party disseminates false info
+summary(vdem$v2smfordom) # foreign governments inject false info
+
+vdem %>% select(v2smonex, v2smmefra, v2smgovdom, v2smpardom, v2smfordom) %>%
+  na.omit() %>% 
+  cor()
 
 ##polarization
+summary(vdem$v2cacamps) # political polarization extends into society
+summary(vdem$v2smpolsoc) # societal polarization
+summary(vdem$v2smpolhate) # parties use hate speech
+
+vdem %>% select(v2cacamps, v2smpolsoc, v2smpolhate) %>%
+  na.omit() %>% 
+  cor()
 
 ##search for most telling time lag
