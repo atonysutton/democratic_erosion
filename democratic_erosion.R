@@ -286,6 +286,32 @@ vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
             count = n(),
             survival_rate = stayed_democratic / count)
 
+##label each country-year as consolidated or not
+###...operationalizing consolidation by democracy spell length
+vdem$consolidated_long <- case_when(vdem$v2x_polyarchy < dem_threshold ~ as.logical(NA),
+                                    vdem$dem_spell_running >= length_threshold ~ TRUE,
+                                    TRUE ~ FALSE)
+summary(vdem$consolidated_long)
+
+###...operationalizing consolidation by polyarchy height
+vdem$consolidated_high <- case_when(vdem$v2x_polyarchy < dem_threshold ~ as.logical(NA),
+                                    vdem$v2x_polyarchy >= height_threshold ~ TRUE,
+                                    TRUE ~ FALSE)
+summary(vdem$consolidated_high)
+
+###...operationalizing consolidation by varietal breadth
+vdem$consolidated_broad <- case_when(vdem$v2x_polyarchy < dem_threshold ~ as.logical(NA),
+                                     (vdem$v2x_libdem >= dem_threshold &
+                                        vdem$v2x_partipdem >= dem_threshold & 
+                                        vdem$v2x_delibdem >= dem_threshold & 
+                                        vdem$v2x_egaldem >= dem_threshold) ~ TRUE,
+                                     TRUE ~ FALSE)
+summary(vdem$consolidated_broad)
+
+###examine overlap among consolidation measures
+vdem %>% select(consolidated_long, consolidated_high, consolidated_broad) %>%
+  na.omit() %>% 
+  cor()
 
 ##how to identify consolidation? 
  ##minimum polyarchy threshold? perhaps look for discontinuities in polyarchy peak among all that ever eroded.
