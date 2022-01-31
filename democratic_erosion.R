@@ -51,7 +51,7 @@ for (i in seq_along(vdem$year)){
   
   #call it democratization if a country is a democracy this year and was not in prior year
   vdem$democratize[i] <- 
-    case_when(pre1_polyarchy > dem_threshold ~ FALSE,
+    case_when(pre1_polyarchy >= dem_threshold ~ FALSE,
               vdem$v2x_polyarchy[i] >= dem_threshold ~ TRUE,
               TRUE ~ FALSE
               )
@@ -88,28 +88,66 @@ for (i in seq_along(vdem$year)){
  if (vdem$v2x_polyarchy[i] < dem_threshold) next
  #recognize democratization years as their own spell starts
  if (vdem$democratize[i] == TRUE) vdem$dem_spell_start[i] <- vdem$year[i]
- if (!is.na(vdem$dem_spell_start[i])) next
-  
- counter <- 1
- end_loop <- 0
- while (end_loop == 0) {
-   search_year <- vdem$year[i] - counter 
-   if_else(vdem$democratize[vdem$country_name == vdem$country_name[i] & vdem$year == search_year] == TRUE,
-           end_loop <- 1,
-           counter <- counter + 1)
-   vdem$dem_spell_start[i] <- search_year
- }
- 
+ if (vdem$democratize[i] == TRUE) next
+
+ vdem$dem_spell_start[i] <- vdem %>%
+   filter(country_name == vdem$country_name[i] &
+            vdem$year < vdem$year[i] & 
+            vdem$democratize == TRUE) %>%
+   summarize(dem_spell_start = max(year)) %>%
+   pull(dem_spell_start)
 }
 
 summary(vdem$dem_spell_start)
+
+##name democratic spells
+vdem$dem_spell_name <- if_else(is.na(vdem$dem_spell_start),
+                               as.character(NA),
+                               paste(vdem$country_name, as.character(vdem$dem_spell_start)))
 
  ###check that every democratic country year is labeled with a spell start
 sum(!is.na(vdem$dem_spell_start)) == sum(vdem$v2x_polyarchy >= dem_threshold)
 
 ##identify prior peak polyarchy within same democratic spell
+vdem$dem_spell_peak = as.numeric(NA)
+ ###loop over every country year
+for (i in seq_along(vdem$year)){
+  ###ignore autocracies
+  if(is.na(vdem$dem_spell_start[i])) next
+  ###examine polyarchy scores from each year during democratic spell, record highest
+  vdem$dem_spell_peak[i] <- vdem %>% 
+    filter(country_name == vdem$country_name[i] &
+             year >= vdem$dem_spell_start[i] &
+             year <= vdem$year[i]) %>% 
+    summarize(peak_polyarchy = max(v2x_polyarchy), na.rm = TRUE) %>%
+    pull(peak_polyarchy)
+}
+summary(vdem$dem_spell_peak)
 
+##record running tally of length of democracy spell
+vdem$dem_spell_running <- vdem$year - vdem$dem_spell_start
 
+##identify eventual outcome of each democracy spell
+vdem$dem_spell_outcome <- as.character(NA)
+
+for (i in seq_along(vdem$year)){
+vdem$dem_spell_outcome[i] <- 
+  if_else(vdem$v2x_polyarchy[i] >= dem_threshold,
+          if_else(sum(vdem$autocratize[vdem$country_name == vdem$country_name[i] & vdem$year >= vdem$year[i]]) > 0,
+                  'autocracy',
+                  'democracy'),
+          as.character(NA))
+}
+vdem$dem_spell_outcome <- as.factor(vdem$dem_spell_outcome)
+summary(vdem$dem_spell_outcome)
+
+##identify consolidation threshold
+vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
+  group_by(polyarchy_cohort = round(v2x_polyarchy, digits = 2)) %>%
+  mutate(outcome_rate = sum(dem_spell_outcome == 'democracy') / n()) %>%
+  ggplot(aes(x = polyarchy_cohort, y = outcome_rate))+
+  geom_point()+
+  geom_smooth()
 
 
 ##how to identify consolidation? 
