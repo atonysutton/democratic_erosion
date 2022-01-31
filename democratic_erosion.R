@@ -80,10 +80,39 @@ vdem$autocratize <- if_else(vdem$first_appear == TRUE,
                             vdem$autocratize)
 summary(vdem$autocratize)
 
-####still need to address instance of a country appearing for the first year in the df but as a democracy ####
+##identify beginning of each democratic spell
+vdem$dem_spell_start <- as.numeric(NA)
+ #loop over every country-year
+for (i in seq_along(vdem$year)){
+ #ignore autocracies
+ if (vdem$v2x_polyarchy[i] < dem_threshold) next
+ #recognize democratization years as their own spell starts
+ if (vdem$democratize[i] == TRUE) vdem$dem_spell_start[i] <- vdem$year[i]
+ if (!is.na(vdem$dem_spell_start[i])) next
+  
+ counter <- 1
+ end_loop <- 0
+ while (end_loop == 0) {
+   search_year <- vdem$year[i] - counter 
+   if_else(vdem$democratize[vdem$country_name == vdem$country_name[i] & vdem$year == search_year] == TRUE,
+           end_loop <- 1,
+           counter <- counter + 1)
+   vdem$dem_spell_start[i] <- search_year
+ }
+ 
+}
+
+summary(vdem$dem_spell_start)
+
+ ###check that every democratic country year is labeled with a spell start
+sum(!is.na(vdem$dem_spell_start)) == sum(vdem$v2x_polyarchy >= dem_threshold)
+
+##identify prior peak polyarchy within same democratic spell
 
 
-##how? 
+
+
+##how to identify consolidation? 
  ##minimum polyarchy threshold? perhaps look for discontinuities in polyarchy peak among all that ever eroded.
  ##robust across multiple vdem high level indexes?
  ##longevity threshold, perhaps empirically derived from survival distribution?
