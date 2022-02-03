@@ -29,7 +29,7 @@ skimr::skim(vdem)
 
 #set arbitrary thresholds
 dem_threshold = 0.5 #on vdem's 1-point scales
-survival_threshold = 0.8 #as a probability
+survival_threshold = 0.5 #as a probability
 erosion_threshold = 1 #as multiple of standard deviations
 
 #situate country-years within democratic spells ----
@@ -387,10 +387,64 @@ vdem %>% filter(consolidated_broad == TRUE, erode == TRUE) %>%
 
 #predict eventual autocratization or erosion ----
 
+##produce a few illustrative statistics
+###highest polyarchy peak that later autocratized //not right yet//
+vdem %>% 
+  filter(dem_spell_outcome == 'autocracy') %>% 
+  mutate(farthest_faller = max(dem_spell_peak)) %>%
+  filter(dem_spell_peak == farthest_faller) %>%
+  select(country_name, year, v2x_polyarchy, dem_spell_name, dem_spell_peak, dem_spell_outcome)
 
+vdem %>%
+  filter(dem_spell_outcome == 'autocracy') %>%
+  #group_by(dem_spell_name) %>%
+  #summarize(max(dem_spell_peak)) %>%
+  arrange(desc(dem_spell_peak)) %>%
+  distinct(dem_spell_name)
 
-##clientelism
-summary(vdem$v2xnp_client) #clientelism indes, rolls up other two plus additional variables
+###distribution of lowest polyarchy scores after a country reached a high threshold
+####identify mean and sd for all democratic country-years
+dems_polyarchy_mean <- vdem %>% 
+  filter(v2x_polyarchy >= dem_threshold) %>%
+  summarize(dems_polyarchy_mean = mean(v2x_polyarchy)) %>%
+  pull(dems_polyarchy_mean)
+dems_polyarchy_sd <- vdem %>% 
+  filter(v2x_polyarchy >= dem_threshold) %>%
+  summarize(dems_polyarchy_sd = sd(v2x_polyarchy)) %>%
+  pull(dems_polyarchy_sd)
+
+####identify all democratic spells that ever exceeded 1 sd above democratic mean
+high_dems_reference_set <-
+vdem %>%
+  filter(v2x_polyarchy >= dems_polyarchy_mean + dems_polyarchy_sd) %>%
+  group_by(country_name) %>%
+  summarize(year_above_highthreshold = min(year))
+
+####log the lowest polyarchy score in a spell after it exceeded 1 sd above mean
+high_dems_reference_set$low_after_high <- as.numeric(NA)
+for (i in seq_along(high_dems_reference_set$country_name)){
+  high_dems_reference_set$low_after_high[i] <-
+    vdem %>% filter(country_name == high_dems_reference_set$country_name[i] &
+                    year >= high_dems_reference_set$year_above_highthreshold[i]) %>%
+    summarize(low_after_high = min(v2x_polyarchy, na.rm = TRUE)) %>%
+    pull(low_after_high)
+}
+
+####identify lowest sinking democracies that previously exceeded 1 sd above mean
+high_dems_reference_set %>% arrange(low_after_high)
+count(high_dems_reference_set, autocratized_after_high_threshold = low_after_high < dem_threshold)
+count(high_dems_reference_set, fell_below_avg_dem_after_high_threshold = low_after_high < dems_polyarchy_mean)
+
+####chart distribution of lowest polyarchy scores after exceeding 1 sd above mean
+ggplot(data = high_dems_reference_set, aes(x = low_after_high))+
+  geom_histogram(binwidth = 0.05)+
+  geom_vline(xintercept = dems_polyarchy_mean)+
+  geom_vline(xintercept = dems_polyarchy_mean + dems_polyarchy_sd, linetype = 'dashed')
+
+##examine independent variables
+
+###clientelism
+summary(vdem$v2xnp_client) #clientelism index, rolls up psprlnks and dlencmps plus additional variables
 summary(vdem$v2psprlnks) #how parties link to constituents
 summary(vdem$v2dlencmps) #particularistic social spending
 
@@ -398,7 +452,7 @@ vdem %>% select(v2xnp_client, v2psprlnks, v2dlencmps) %>%
   na.omit() %>% 
   cor()
 
-##information control
+###information control
 summary(vdem$v2smonex) # online media consumption
 summary(vdem$v2smmefra) # online media fractionalization
 summary(vdem$v2smgovdom) # government disseminates false info
@@ -409,7 +463,7 @@ vdem %>% select(v2smonex, v2smmefra, v2smgovdom, v2smpardom, v2smfordom) %>%
   na.omit() %>% 
   cor()
 
-##polarization
+###polarization
 summary(vdem$v2cacamps) # political polarization extends into society
 summary(vdem$v2smpolsoc) # societal polarization
 summary(vdem$v2smpolhate) # parties use hate speech
@@ -418,4 +472,23 @@ vdem %>% select(v2cacamps, v2smpolsoc, v2smpolhate) %>%
   na.omit() %>% 
   cor()
 
+##model nomenclature ----
+#m1 = all democratic cases, predict autocratization
+#m2 = consolidated cases, predict autocratization
+#m3 = all democratic cases, predict erosion
+#m4 = consolidated cases, predict erosion
+vdem_dem = vdem %>% filter(v2x_polyarchy >= dem_threshold)
+vdem_con = vdem %>% filter(consolidated_lhb = TRUE)
+
+##model clientelism ----
+cm1 <- lm(dem_spell_outcome == 'autocracy' ~ v2xnp_client, data = vdem_dem)
+summary(cm1)
+
+cm2 <- lm(dem_spell_outcome == 'autocracy' ~ v2xnp_client, data = vdem_con)
+summary(cm2)
+
+cm3 <- lm(ero)          
+
 ##search for most telling time lag
+##control for country- or year-fixed effects? seems especially important for online factors
+
