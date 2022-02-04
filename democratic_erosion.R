@@ -3,6 +3,7 @@ setwd('C:/Tony/git_workspace/democratic_erosion')
 
 #load libraries
 library(tidyverse)
+library(scales)
 
 #load and shape data ----
 
@@ -19,15 +20,28 @@ library(tidyverse)
 #                        e_mipopula, e_miurbani,
 #                        e_total_fuel_income_pc, e_total_resources_income_pc)
 
-#write_csv(vdem, file = './data/vdem_trimmed.csv')
+##write_csv(vdem, file = './data/vdem_trimmed.csv')
 
 vdem <- read_csv('./data/vdem_trimmed.csv')
 
 vdem <- vdem %>% filter(!is.na(v2x_polyarchy))
 
+##rescale variables to zero-to-one, 
+ ##and ensure 1 is the direction of more of that variable (not always more democratic)
+vdem$v2cacamps <- rescale(vdem$v2cacamps, to = c(0,1))
+vdem$v2smpolsoc <- 1 - rescale(vdem$v2smpolsoc)
+vdem$v2smpolhate <- 1 - rescale(vdem$v2smpolhate)
+vdem$v2smonex <- rescale(vdem$v2smonex, to = c(0,1))
+vdem$v2smmefra <- rescale(vdem$v2smmefra, to = c(0,1))
+vdem$v2smgovdom <- 1 - rescale(vdem$v2smgovdom, to = c(0,1))
+vdem$v2smpardom <- 1 - rescale(vdem$v2smpardom, to = c(0,1))
+vdem$v2smfordom <- 1 - rescale(vdem$v2smfordom, to = c(0,1))
+vdem$v2psprlnks <- 1 - rescale(vdem$v2psprlnks, to = c(0,1))
+vdem$v2dlencmps <- 1 - rescale(vdem$v2dlencmps, to = c(0,1))
+
 skimr::skim(vdem)
 
-#set arbitrary thresholds
+#set arbitrary thresholds----
 dem_threshold = 0.5 #on vdem's 1-point scales
 survival_threshold = 0.5 #as a probability
 erosion_threshold = 1 #as multiple of standard deviations
@@ -362,6 +376,10 @@ vdem %>% filter(erode == TRUE) %>%
   group_by(dem_spell_outcome) %>% 
   summarize(count = n())
 
+###then label all country-years within spell, saying whether spell included erosion
+vdem <- vdem %>% group_by(dem_spell_name) %>% mutate(dem_spell_erosion = sum(erode) > 0) %>% ungroup()
+summary(vdem$dem_spell_erosion)
+
 ##review available cases against which to build predictive models 
 ###examine cases where consolidated regime autocratized
  ###note that some (eg Denmark 1902) ended in foreign occupation
@@ -388,19 +406,13 @@ vdem %>% filter(consolidated_broad == TRUE, erode == TRUE) %>%
 #predict eventual autocratization or erosion ----
 
 ##produce a few illustrative statistics
-###highest polyarchy peak that later autocratized //not right yet//
+
+###highest polyarchy peak that later autocratized
 vdem %>% 
   filter(dem_spell_outcome == 'autocracy') %>% 
-  mutate(farthest_faller = max(dem_spell_peak)) %>%
-  filter(dem_spell_peak == farthest_faller) %>%
-  select(country_name, year, v2x_polyarchy, dem_spell_name, dem_spell_peak, dem_spell_outcome)
-
-vdem %>%
-  filter(dem_spell_outcome == 'autocracy') %>%
-  #group_by(dem_spell_name) %>%
-  #summarize(max(dem_spell_peak)) %>%
-  arrange(desc(dem_spell_peak)) %>%
-  distinct(dem_spell_name)
+  group_by(dem_spell_name) %>%
+  summarize(farthest_faller = max(dem_spell_peak), last_year = max(year))
+  arrange(desc(farthest_faller))
 
 ###distribution of lowest polyarchy scores after a country reached a high threshold
 ####identify mean and sd for all democratic country-years
@@ -441,6 +453,7 @@ ggplot(data = high_dems_reference_set, aes(x = low_after_high))+
   geom_vline(xintercept = dems_polyarchy_mean)+
   geom_vline(xintercept = dems_polyarchy_mean + dems_polyarchy_sd, linetype = 'dashed')
 
+
 ##examine independent variables
 
 ###clientelism
@@ -458,6 +471,9 @@ summary(vdem$v2smmefra) # online media fractionalization
 summary(vdem$v2smgovdom) # government disseminates false info
 summary(vdem$v2smpardom) # party disseminates false info
 summary(vdem$v2smfordom) # foreign governments inject false info
+
+
+
 
 vdem %>% select(v2smonex, v2smmefra, v2smgovdom, v2smpardom, v2smfordom) %>%
   na.omit() %>% 
@@ -487,8 +503,46 @@ summary(cm1)
 cm2 <- lm(dem_spell_outcome == 'autocracy' ~ v2xnp_client, data = vdem_con)
 summary(cm2)
 
-cm3 <- lm(ero)          
+cm3 <- lm(dem_spell_erosion == TRUE ~ v2xnp_client, data = vdem_dem)
+summary(cm3)
+
+cm4 <- lm(dem_spell_erosion == TRUE ~ v2xnp_client, data = vdem_con)
+summary(cm4)
+
+
+##model media----
+mm1_full <- lm(dem_spell_outcome == 'autocracy' ~ v2smonex + v2smmefra + v2smgovdom + v2smpardom + v2smfordom, data = vdem_dem)
+summary(mm1_full)
+
+mm2_full <- lm(dem_spell_outcome == 'autocracy' ~ v2smonex + v2smmefra + v2smgovdom + v2smpardom + v2smfordom, data = vdem_con)
+summary(mm2_full)
+
+mm3_full <- lm(dem_spell_erosion == TRUE ~ v2smonex + v2smmefra + v2smgovdom + v2smpardom + v2smfordom, data = vdem_dem)
+summary(mm3_full)
+
+mm4_full <- lm(dem_spell_erosion == TRUE ~ v2smonex + v2smmefra + v2smgovdom + v2smpardom + v2smfordom, data = vdem_con)
+summary(mm4_full)
+
+
+##model polarization----
+pm1_full <- lm(dem_spell_outcome == 'autocracy' ~ v2cacamps + v2smpolsoc + v2smpolhate, data = vdem_dem)
+summary(pm1_full)
+
+pm2_full <- lm(dem_spell_outcome == 'autocracy' ~ v2cacamps + v2smpolsoc + v2smpolhate, data = vdem_con)
+summary(pm2_full)
+
+pm3_full <- lm(dem_spell_erosion == TRUE ~ v2cacamps + v2smpolsoc + v2smpolhate, data = vdem_dem)
+summary(pm3_full)
+
+pm4_full <- lm(dem_spell_erosion == TRUE ~ v2cacamps + v2smpolsoc + v2smpolhate, data = vdem_con)
+summary(pm4_full)
 
 ##search for most telling time lag
-##control for country- or year-fixed effects? seems especially important for online factors
 
+
+
+
+##establish directionality of independent variables
+##control for country- or year-fixed effects? seems especially important for online factors
+##rescale independent variables to either 0-1 or z-scores
+##search for interactions among media variables or between media and polarization
