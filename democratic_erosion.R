@@ -45,6 +45,7 @@ skimr::skim(vdem)
 dem_threshold = 0.5 #on vdem's 1-point scales
 survival_threshold = 0.5 #as a probability
 erosion_threshold = 1 #as multiple of standard deviations
+lag_range = 10 #test time lags of dependent variables from 1 to this many years
 
 #situate country-years within democratic spells ----
 
@@ -538,7 +539,32 @@ pm4_full <- lm(dem_spell_erosion == TRUE ~ v2cacamps + v2smpolsoc + v2smpolhate,
 summary(pm4_full)
 
 ##search for most telling time lag
+###write custom function to find optimal time lag for regression on any set of variables
+test_lags <- function(df = vdem_con, vars) {
+  model_results <- data.frame(time_lag = c(1:lag_range),
+                              regression_coef = as.numeric(NA),
+                              p_value = as.numeric(NA))
+  
+  for (i in 1:lag_range){
+    wdf <- df %>%
+      group_by(country_name) %>%
+      arrange(year) %>%
+      mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = i)) %>%
+      ungroup()
+    wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
+    
+    wm <- lm(polyarchy_change ~ eval(parse(text = paste(vars, collapse = '+'))), data = wdf)
+    model_results$regression_coef[i] <- summary(wm)$coefficients[2,'Estimate'] #coefficient
+    model_results$p_value[i] <- summary(wm)$coefficients[2, 4] #p-value
+  }
+  print(model_results)
+  print(model_results[model_results %>%
+                  filter(p_value < 0.05) %>%
+                  summarize(strongest_prediction = time_lag[which.max(abs(regression_coef))]) %>%
+                  pull(strongest_prediction),])
+}
 
+test_lags(vars = 'v2xnp_client')
 
 
 
