@@ -1,6 +1,12 @@
 setwd('C:/Tony/git_workspace/democratic_erosion')
 #setwd('C:/Tony/Political Science MA/_thesis/quantitative work - backup copy/democratic_erosion')
 
+#set arbitrary thresholds----
+dem_threshold = 0.5 #on vdem's 1-point scales
+survival_threshold = 0.5 #as a probability
+erosion_threshold = 1 #as multiple of standard deviations
+lag_range = 10 #test time lags of dependent variables from 1 to this many years
+
 #load libraries
 library(tidyverse)
 library(scales)
@@ -39,13 +45,26 @@ vdem$v2smfordom <- 1 - rescale(vdem$v2smfordom, to = c(0,1))
 vdem$v2psprlnks <- 1 - rescale(vdem$v2psprlnks, to = c(0,1))
 vdem$v2dlencmps <- 1 - rescale(vdem$v2dlencmps, to = c(0,1))
 
-skimr::skim(vdem)
+##recalculate natural resources income as fraction of gdp
+vdem$e_total_resources_percent <- 
+  case_when(is.na(vdem$e_migdppc) ~ as.numeric(NA),
+            vdem$e_migdppc <= 0 ~ as.numeric(NA),
+            TRUE ~ vdem$e_total_resources_income_pc / vdem$e_migdppc )
 
-#set arbitrary thresholds----
-dem_threshold = 0.5 #on vdem's 1-point scales
-survival_threshold = 0.5 #as a probability
-erosion_threshold = 1 #as multiple of standard deviations
-lag_range = 10 #test time lags of dependent variables from 1 to this many years
+##multiply variables to interact in linear regressions
+vdem$clientXresources <- vdem$v2xnp_client * vdem$e_total_resources_percent #clientelism * natural resources
+vdem$smmefraXsmpardom <- vdem$v2smmefra * vdem$v2smpardom #online fractionalization * party disinfo
+vdem$smonexXsmmefra <- vdem$v2smonex * vdem$v2smmefra #online consumption * fractionalization
+vdem$smonexXsmfordom <- vdem$v2smonex * vdem$v2smfordom #online consuption * foreign disinfo
+vdem$smmefraXsmfordom <- vdem$v2smmefra * vdem$v2smfordom #online fractionalization * foreign disinfo
+vdem$clientXcacamps <- vdem$v2cacamps * vdem$v2xnp_client #clientelism * political polarization
+vdem$clientXsmpolsoc <- vdem$v2smpolsoc * vdem$v2xnp_client #clientelism * social polarization
+vdem$smmefraXsmpolsoc <- vdem$v2smmefra * vdem$v2smpolsoc #online fractionalization * social polarization
+
+
+  
+##examine data
+skimr::skim(vdem)
 
 #situate country-years within democratic spells ----
 
@@ -473,9 +492,6 @@ summary(vdem$v2smgovdom) # government disseminates false info
 summary(vdem$v2smpardom) # party disseminates false info
 summary(vdem$v2smfordom) # foreign governments inject false info
 
-
-
-
 vdem %>% select(v2smonex, v2smmefra, v2smgovdom, v2smpardom, v2smfordom) %>%
   na.omit() %>% 
   cor()
@@ -495,7 +511,7 @@ vdem %>% select(v2cacamps, v2smpolsoc, v2smpolhate) %>%
 #m3 = all democratic cases, predict erosion
 #m4 = consolidated cases, predict erosion
 vdem_dem = vdem %>% filter(v2x_polyarchy >= dem_threshold)
-vdem_con = vdem %>% filter(consolidated_lhb = TRUE)
+vdem_con = vdem %>% filter(consolidated_lhb == TRUE)
 
 ##model clientelism ----
 cm1 <- lm(dem_spell_outcome == 'autocracy' ~ v2xnp_client, data = vdem_dem)
@@ -552,23 +568,78 @@ test_lags <- function(df = vdem_con, vars) {
       mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = i)) %>%
       ungroup()
     wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
+    wdf$year_factor <- as.factor(wdf$year)
     
-    wm <- lm(polyarchy_change ~ eval(parse(text = paste(vars, collapse = '+'))), data = wdf)
+    wm <- lm(polyarchy_change ~ ., data = wdf[,c('polyarchy_change', vars, 'year_factor')])
     model_results$regression_coef[i] <- summary(wm)$coefficients[2,'Estimate'] #coefficient
     model_results$p_value[i] <- summary(wm)$coefficients[2, 4] #p-value
   }
   print(model_results)
   print(model_results[model_results %>%
-                  filter(p_value < 0.05) %>%
-                  summarize(strongest_prediction = time_lag[which.max(abs(regression_coef))]) %>%
-                  pull(strongest_prediction),])
+                        filter(p_value < 0.05) %>%
+                        summarize(strongest_prediction = time_lag[which.max(abs(regression_coef))]) %>%
+                        pull(strongest_prediction),])
 }
 
 test_lags(vars = 'v2xnp_client')
+test_lags(vars = c('v2xnp_client', 'v2x_polyarchy', 'e_migdppc'))
+test_lags(vars = c('v2xnp_client', 'v2x_polyarchy', 'e_migdppc', 'e_total_resources_percent'))
+test_lags(vars = c('v2smonex', 'v2x_polyarchy', 'e_migdppc'))
+test_lags(vars = c('v2smmefra', 'v2x_polyarchy', 'e_migdppc'))
+test_lags(vars = c('v2smgovdom', 'v2x_polyarchy', 'e_migdppc'))
+test_lags(vars = c('v2smpardom', 'v2x_polyarchy', 'e_migdppc'))
+test_lags(vars = c('v2smfordom', 'v2x_polyarchy', 'e_migdppc'))
+test_lags(vars = c('v2cacamps', 'v2x_polyarchy', 'e_migdppc'))
+test_lags(vars = c('v2smpolsoc', 'v2x_polyarchy', 'e_migdppc'))
+test_lags(vars = c('v2smpolhate', 'v2x_polyarchy', 'e_migdppc'))
+
+test_lags(vars = c('clientXresources', 'v2xnp_client', 'e_total_resources_percent', 'v2x_polyarchy', 'e_migdppc'))
+test_lags(vars = c('smmefraXsmpardom', 'v2smmefra', 'v2smpardom', 'v2x_polyarchy', 'e_migdppc'))
+test_lags(vars = c('smonexXsmmefra', 'v2smonex', 'v2smmefra', 'v2x_polyarchy', 'e_migdppc'))
+test_lags(vars = c('smonexXsmfordom', 'v2smonex', 'v2smfordom', 'v2x_polyarchy', 'e_migdppc'))
+test_lags(vars = c('smmefraXsmfordom', 'v2smmefra', 'v2smfordom', 'v2x_polyarchy', 'e_migdppc'))
+test_lags(vars = c('clientXcacamps', 'v2xnp_client', 'v2cacamps', 'v2x_polyarchy', 'e_migdppc'))
+test_lags(vars = c('clientXsmpolsoc', 'v2xnp_client', 'v2smpolsoc', 'v2x_polyarchy', 'e_migdppc'))
+test_lags(vars = c('smmefraXsmpolsoc', 'v2smmefra', 'v2smpolsoc', 'v2x_polyarchy', 'e_migdppc'))
+
+#chart interacted variables
+ ##works as hard coded. next step is to code generically for any two illustrated variables
+illustrate_1 = 'v2smmefra'
+illustrate_2 = 'v2smpolsoc'
+lag_years = 10
+point_scale = seq(from = 0, to = 1, by = 0.05)
+mimir <- data.frame(v2smmefra = rep(point_scale, times = length(point_scale)),
+                    v2smpolsoc = rep(point_scale, each = length(point_scale)),
+                    v2x_polyarchy = median(vdem_con$v2x_polyarchy, na.rm = TRUE),
+                    e_migdppc = median(vdem_con$e_migdppc, na.rm = TRUE))
+wdf <- vdem_con %>%
+  group_by(country_name) %>%
+  arrange(year) %>%
+  mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = lag_years)) %>%
+  ungroup()
+wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
+wm <- lm(polyarchy_change ~ v2smmefra * v2smpolsoc + v2x_polyarchy + e_migdppc, data = wdf)
+
+mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mimir))
+mimir %>% filter(v2smpolsoc %in% c(0.25, 0.75)) %>%
+ggplot(aes(x = v2smmefra, y = expected_polyarchy, color = as.factor(v2smpolsoc)))+
+  geom_line()
+
+#catch cursor
 
 
 
+
+
+
+
+
+
+
+#notes----
 ##establish directionality of independent variables
 ##control for country- or year-fixed effects? seems especially important for online factors
-##rescale independent variables to either 0-1 or z-scores
-##search for interactions among media variables or between media and polarization
+##search for interactions:
+ ##among media variables
+ ##between media and polarization
+ ##between clientelism and natural resources
