@@ -37,8 +37,8 @@ vdem <- vdem %>% filter(!is.na(v2x_polyarchy))
 vdem$v2cacamps <- rescale(vdem$v2cacamps, to = c(0,1))
 vdem$v2smpolsoc <- 1 - rescale(vdem$v2smpolsoc)
 vdem$v2smpolhate <- 1 - rescale(vdem$v2smpolhate)
-vdem$v2smonex <- rescale(vdem$v2smonex, to = c(0,1))
-vdem$v2smmefra <- rescale(vdem$v2smmefra, to = c(0,1))
+vdem$v2smonex <- rescale(vdem$v2smonex, to = c(0,1)) #already runs low to high
+vdem$v2smmefra <- 1 - rescale(vdem$v2smmefra, to = c(0,1))
 vdem$v2smgovdom <- 1 - rescale(vdem$v2smgovdom, to = c(0,1))
 vdem$v2smpardom <- 1 - rescale(vdem$v2smpardom, to = c(0,1))
 vdem$v2smfordom <- 1 - rescale(vdem$v2smfordom, to = c(0,1))
@@ -608,6 +608,28 @@ illustrate_1 = 'v2smmefra'
 illustrate_2 = 'v2smpolsoc'
 lag_years = 10
 point_scale = seq(from = 0, to = 1, by = 0.05)
+
+#test code, genericized
+mimir <- data.frame(independent_variable = rep(point_scale, times = length(point_scale)),
+                    interacted_variable = rep(point_scale, each = length(point_scale)),
+                    v2x_polyarchy = median(vdem_con$v2x_polyarchy, na.rm = TRUE),
+                    e_migdppc = median(vdem_con$e_migdppc, na.rm = TRUE))
+
+wdf <- vdem_con %>%
+  group_by(country_name) %>%
+  arrange(year) %>%
+  mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = lag_years)) %>%
+  ungroup()
+wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
+wm <- lm(polyarchy_change ~  + v2x_polyarchy + e_migdppc, data = wdf)
+
+mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mimir))
+mimir %>% filter(v2smpolsoc %in% c(0.25, 0.75)) %>%
+  ggplot(aes(x = v2smmefra, y = expected_polyarchy, color = as.factor(v2smpolsoc)))+
+  geom_line()
+
+
+#working code, hard coded
 mimir <- data.frame(v2smmefra = rep(point_scale, times = length(point_scale)),
                     v2smpolsoc = rep(point_scale, each = length(point_scale)),
                     v2x_polyarchy = median(vdem_con$v2x_polyarchy, na.rm = TRUE),
