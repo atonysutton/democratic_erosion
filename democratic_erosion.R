@@ -593,23 +593,210 @@ test_lags(vars = c('v2cacamps', 'v2x_polyarchy', 'e_migdppc'))
 test_lags(vars = c('v2smpolsoc', 'v2x_polyarchy', 'e_migdppc'))
 test_lags(vars = c('v2smpolhate', 'v2x_polyarchy', 'e_migdppc'))
 
-test_lags(vars = c('clientXresources', 'v2xnp_client', 'e_total_resources_percent', 'v2x_polyarchy', 'e_migdppc'))
+ ###models with interacted variables
 test_lags(vars = c('smmefraXsmpardom', 'v2smmefra', 'v2smpardom', 'v2x_polyarchy', 'e_migdppc'))
 test_lags(vars = c('smonexXsmmefra', 'v2smonex', 'v2smmefra', 'v2x_polyarchy', 'e_migdppc'))
 test_lags(vars = c('smonexXsmfordom', 'v2smonex', 'v2smfordom', 'v2x_polyarchy', 'e_migdppc'))
 test_lags(vars = c('smmefraXsmfordom', 'v2smmefra', 'v2smfordom', 'v2x_polyarchy', 'e_migdppc'))
-test_lags(vars = c('clientXcacamps', 'v2xnp_client', 'v2cacamps', 'v2x_polyarchy', 'e_migdppc'))
 test_lags(vars = c('clientXsmpolsoc', 'v2xnp_client', 'v2smpolsoc', 'v2x_polyarchy', 'e_migdppc'))
 test_lags(vars = c('smmefraXsmpolsoc', 'v2smmefra', 'v2smpolsoc', 'v2x_polyarchy', 'e_migdppc'))
+ ####interacted variables that are not significant
+test_lags(vars = c('clientXresources', 'v2xnp_client', 'e_total_resources_percent', 'v2x_polyarchy', 'e_migdppc'))
+test_lags(vars = c('clientXcacamps', 'v2xnp_client', 'v2cacamps', 'v2x_polyarchy', 'e_migdppc'))
 
-#chart interacted variables
- ##works as hard coded. next step is to code generically for any two illustrated variables
-illustrate_1 = 'v2smmefra'
-illustrate_2 = 'v2smpolsoc'
+#chart interacted variables----
 lag_years = 10
 point_scale = seq(from = 0, to = 1, by = 0.05)
 
-#test code, genericized
+##party disinformation by media fractionalization
+mimir <- data.frame(v2smpardom = rep(point_scale, times = length(point_scale)),
+                    v2smmefra = rep(point_scale, each = length(point_scale)),
+                    v2x_polyarchy = median(vdem_con$v2x_polyarchy[df$v2x_polyarchy >= 0.5], na.rm = TRUE),
+                    e_migdppc = median(vdem_con$e_migdppc[df$v2x_polyarchy >= 0.5], na.rm = TRUE))
+wdf <- vdem_con %>%
+  group_by(country_name) %>%
+  arrange(year) %>%
+  mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = lag_years)) %>%
+  ungroup()
+wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
+wm <- lm(polyarchy_change ~ v2smpardom * v2smmefra + v2x_polyarchy + e_migdppc, data = wdf)
+
+mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mimir))
+mimir %>% filter(v2smmefra %in% c(0.25, 0.75)) %>%
+ggplot(aes(x = v2smpardom, y = expected_polyarchy, color = as.factor(v2smmefra)))+
+  geom_line()
+
+##online consumption by media fractionalization
+mimir <- data.frame(v2smonex = rep(point_scale, times = length(point_scale)),
+                    v2smmefra = rep(point_scale, each = length(point_scale)),
+                    v2x_polyarchy = median(vdem_con$v2x_polyarchy[df$v2x_polyarchy >= 0.5], na.rm = TRUE),
+                    e_migdppc = median(vdem_con$e_migdppc[df$v2x_polyarchy >= 0.5], na.rm = TRUE))
+wdf <- vdem_con %>%
+  group_by(country_name) %>%
+  arrange(year) %>%
+  mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = lag_years)) %>%
+  ungroup()
+wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
+wm <- lm(polyarchy_change ~ v2smonex * v2smmefra + v2x_polyarchy + e_migdppc, data = wdf)
+
+mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mimir))
+mimir %>% filter(v2smmefra %in% c(0.25, 0.75)) %>%
+  ggplot(aes(x = v2smonex, y = expected_polyarchy, color = as.factor(v2smmefra)))+
+  geom_line()
+
+##online consumption by foreign disinformation
+mimir <- data.frame(v2smonex = rep(point_scale, times = length(point_scale)),
+                    v2smfordom = rep(point_scale, each = length(point_scale)),
+                    v2x_polyarchy = median(vdem_con$v2x_polyarchy[df$v2x_polyarchy >= 0.5], na.rm = TRUE),
+                    e_migdppc = median(vdem_con$e_migdppc[df$v2x_polyarchy >= 0.5], na.rm = TRUE))
+wdf <- vdem_con %>%
+  group_by(country_name) %>%
+  arrange(year) %>%
+  mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = lag_years)) %>%
+  ungroup()
+wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
+wm <- lm(polyarchy_change ~ v2smonex * v2smfordom + v2x_polyarchy + e_migdppc, data = wdf)
+
+mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mimir))
+mimir %>% filter(v2smfordom %in% c(0.25, 0.75)) %>%
+  ggplot(aes(x = v2smonex, y = expected_polyarchy, color = as.factor(v2smfordom)))+
+  geom_line()
+
+##foreign disinformation by media fractionalization
+mimir <- data.frame(v2smfordom = rep(point_scale, times = length(point_scale)),
+                    v2smmefra = rep(point_scale, each = length(point_scale)),
+                    v2x_polyarchy = median(vdem_con$v2x_polyarchy[df$v2x_polyarchy >= 0.5], na.rm = TRUE),
+                    e_migdppc = median(vdem_con$e_migdppc[df$v2x_polyarchy >= 0.5], na.rm = TRUE))
+wdf <- vdem_con %>%
+  group_by(country_name) %>%
+  arrange(year) %>%
+  mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = lag_years)) %>%
+  ungroup()
+wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
+wm <- lm(polyarchy_change ~ v2smfordom * v2smmefra + v2x_polyarchy + e_migdppc, data = wdf)
+
+mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mimir))
+mimir %>% filter(v2smmefra %in% c(0.25, 0.75)) %>%
+  ggplot(aes(x = v2smfordom, y = expected_polyarchy, color = as.factor(v2smmefra)))+
+  geom_line()
+
+##clientelism by polarized society
+mimir <- data.frame(v2xnp_client = rep(point_scale, times = length(point_scale)),
+                    v2smpolsoc = rep(point_scale, each = length(point_scale)),
+                    v2x_polyarchy = median(vdem_con$v2x_polyarchy[df$v2x_polyarchy >= 0.5], na.rm = TRUE),
+                    e_migdppc = median(vdem_con$e_migdppc[df$v2x_polyarchy >= 0.5], na.rm = TRUE))
+wdf <- vdem_con %>%
+  group_by(country_name) %>%
+  arrange(year) %>%
+  mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = lag_years)) %>%
+  ungroup()
+wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
+wm <- lm(polyarchy_change ~ v2xnp_client * v2smpolsoc + v2x_polyarchy + e_migdppc, data = wdf)
+
+mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mimir))
+mimir %>% filter(v2smpolsoc %in% c(0.25, 0.75)) %>%
+  ggplot(aes(x = v2xnp_client, y = expected_polyarchy, color = as.factor(v2smpolsoc)))+
+  geom_line()
+
+##media fractionalization by polarized society
+mimir <- data.frame(v2smmefra = rep(point_scale, times = length(point_scale)),
+                    v2smpolsoc = rep(point_scale, each = length(point_scale)),
+                    v2x_polyarchy = median(vdem_con$v2x_polyarchy[df$v2x_polyarchy >= 0.5], na.rm = TRUE),
+                    e_migdppc = median(vdem_con$e_migdppc[df$v2x_polyarchy >= 0.5], na.rm = TRUE))
+wdf <- vdem_con %>%
+  group_by(country_name) %>%
+  arrange(year) %>%
+  mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = lag_years)) %>%
+  ungroup()
+wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
+wm <- lm(polyarchy_change ~ v2smmefra * v2smpolsoc + v2x_polyarchy + e_migdppc, data = wdf)
+
+mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mimir))
+mimir %>% filter(v2smpolsoc %in% c(0.25, 0.75)) %>%
+  ggplot(aes(x = v2smmefra, y = expected_polyarchy, color = as.factor(v2smpolsoc)))+
+  geom_line()
+
+##template
+mimir <- data.frame(ind1 = rep(point_scale, times = length(point_scale)),
+                    ind2 = rep(point_scale, each = length(point_scale)),
+                    v2x_polyarchy = median(vdem_con$v2x_polyarchy[df$v2x_polyarchy >= 0.5], na.rm = TRUE),
+                    e_migdppc = median(vdem_con$e_migdppc[df$v2x_polyarchy >= 0.5], na.rm = TRUE))
+wdf <- vdem_con %>%
+  group_by(country_name) %>%
+  arrange(year) %>%
+  mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = lag_years)) %>%
+  ungroup()
+wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
+wm <- lm(polyarchy_change ~ ind1 * ind2 + v2x_polyarchy + e_migdppc, data = wdf)
+
+mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mimir))
+mimir %>% filter(ind2 %in% c(0.25, 0.75)) %>%
+  ggplot(aes(x = ind1, y = expected_polyarchy, color = as.factor(ind2)))+
+  geom_line()
+
+##template
+mimir <- data.frame(ind1 = rep(point_scale, times = length(point_scale)),
+                    ind2 = rep(point_scale, each = length(point_scale)),
+                    v2x_polyarchy = median(vdem_con$v2x_polyarchy[df$v2x_polyarchy >= 0.5], na.rm = TRUE),
+                    e_migdppc = median(vdem_con$e_migdppc[df$v2x_polyarchy >= 0.5], na.rm = TRUE))
+wdf <- vdem_con %>%
+  group_by(country_name) %>%
+  arrange(year) %>%
+  mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = lag_years)) %>%
+  ungroup()
+wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
+wm <- lm(polyarchy_change ~ ind1 * ind2 + v2x_polyarchy + e_migdppc, data = wdf)
+
+mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mimir))
+mimir %>% filter(ind2 %in% c(0.25, 0.75)) %>%
+  ggplot(aes(x = ind1, y = expected_polyarchy, color = as.factor(ind2)))+
+  geom_line()
+
+#catch cursor
+
+
+
+
+
+
+
+
+
+
+
+#non-working attempt to genericize charting of interacted variables
+df = vdem_con
+#chart_interacted <- function(df = vdem_con, vars, lag_years = 5) {
+mimir <- data.frame(ind_var1 = rep(point_scale, times = length(point_scale)),
+                    ind_var2 = rep(point_scale, each = length(point_scale)),
+                    v2x_polyarchy = median(df$v2x_polyarchy[df$v2x_polyarchy >= 0.5], na.rm = TRUE),
+                    e_migdppc = median(df$e_migdppc[df$v2x_polyarchy >= 0.5], na.rm = TRUE))
+mimir$inter_var <- mimir$ind_var1 * mimir$ind_var2
+
+wdf <- df %>%
+  group_by(country_name) %>%
+  arrange(year) %>%
+  mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = lag_years)) %>%
+  ungroup()
+wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
+wdf$year_factor <- as.factor(wdf$year)
+wdf <- cbind(wdf, ind_var1 = wdf[,vars[2]])
+wdf$ind_var1 <- cbind(wdf[,vars[2]])
+wdf$ind_var2 <- cbind(wdf[,vars[3]])
+
+wm <- lm(polyarchy_change ~ ., data = wdf[,c('polyarchy_change', vars, 'year_factor')])
+
+mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mimir))
+mimir %>% filter(vars[3] %in% c(0.25, 0.75)) %>%
+  ggplot(aes(x = vars[2], y = expected_polyarchy, color = as.factor(vars[3])))+
+  geom_line()
+#}
+
+chart_interacted(vars = c('smmefraXsmpardom', 'v2smmefra', 'v2smpardom', 'v2x_polyarchy', 'e_migdppc'), lag_years = 10)
+
+
+
+
 mimir <- data.frame(independent_variable = rep(point_scale, times = length(point_scale)),
                     interacted_variable = rep(point_scale, each = length(point_scale)),
                     v2x_polyarchy = median(vdem_con$v2x_polyarchy, na.rm = TRUE),
@@ -627,30 +814,6 @@ mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mi
 mimir %>% filter(v2smpolsoc %in% c(0.25, 0.75)) %>%
   ggplot(aes(x = v2smmefra, y = expected_polyarchy, color = as.factor(v2smpolsoc)))+
   geom_line()
-
-
-#working code, hard coded
-mimir <- data.frame(v2smmefra = rep(point_scale, times = length(point_scale)),
-                    v2smpolsoc = rep(point_scale, each = length(point_scale)),
-                    v2x_polyarchy = median(vdem_con$v2x_polyarchy, na.rm = TRUE),
-                    e_migdppc = median(vdem_con$e_migdppc, na.rm = TRUE))
-wdf <- vdem_con %>%
-  group_by(country_name) %>%
-  arrange(year) %>%
-  mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = lag_years)) %>%
-  ungroup()
-wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
-wm <- lm(polyarchy_change ~ v2smmefra * v2smpolsoc + v2x_polyarchy + e_migdppc, data = wdf)
-
-mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mimir))
-mimir %>% filter(v2smpolsoc %in% c(0.25, 0.75)) %>%
-ggplot(aes(x = v2smmefra, y = expected_polyarchy, color = as.factor(v2smpolsoc)))+
-  geom_line()
-
-#catch cursor
-
-
-
 
 
 
