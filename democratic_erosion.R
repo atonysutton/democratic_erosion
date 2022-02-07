@@ -10,6 +10,9 @@ lag_range = 10 #test time lags of dependent variables from 1 to this many years
 #load libraries
 library(tidyverse)
 library(scales)
+library(knitr)  #for kable function to format regression results
+library(stargazer)  #for displaying multiple model results
+library(MatchIt)
 
 #load and shape data ----
 
@@ -437,10 +440,27 @@ vdem %>% filter(consolidated_high == TRUE, erode == TRUE) %>%
 vdem %>% filter(consolidated_broad == TRUE, erode == TRUE) %>% 
   distinct(dem_spell_name)
 
+##spin off data frames for all democratic country-years
+ ##and for all country-years within democratic spells that ever consolidated
+vdem_dem = vdem %>% filter(v2x_polyarchy >= dem_threshold)
+vdem_con <- vdem_dem %>% 
+  group_by(dem_spell_name) %>%
+  mutate(ever_consolidated = if_else(sum(consolidated_lhb == TRUE, na.rm = TRUE) > 0,
+                                     TRUE,
+                                     FALSE)) %>%
+  ungroup() %>%
+  filter(ever_consolidated == TRUE)
+
+##label years relative to eventual erosion or autocratization, with control group scores
+for (i in seq_along(vdem_con$year)){
+  
+  
+}
 
 #predict eventual autocratization or erosion ----
 
 ##produce a few illustrative statistics
+
 
 ###highest polyarchy peak that later autocratized
 vdem %>% 
@@ -525,51 +545,134 @@ vdem %>% select(v2cacamps, v2smpolsoc, v2smpolhate) %>%
 #m2 = consolidated cases, predict autocratization
 #m3 = all democratic cases, predict erosion
 #m4 = consolidated cases, predict erosion
-vdem_dem = vdem %>% filter(v2x_polyarchy >= dem_threshold)
-vdem_con = vdem %>% filter(consolidated_lhb == TRUE)
+#m5 = consolidated cases, predict autocratization using matching for controls
+#m6 = consolidated cases, predict erosion using matching for controls
 
 ##model clientelism ----
-cm1 <- lm(dem_spell_outcome == 'autocracy' ~ v2xnp_client, data = vdem_dem)
+cm1 <- lm(dem_spell_outcome == 'autocracy' ~ v2xnp_client + v2x_polyarchy + e_migdppc + as.factor(year), data = vdem_dem)
 summary(cm1)
 
-cm2 <- lm(dem_spell_outcome == 'autocracy' ~ v2xnp_client, data = vdem_con)
+cm2 <- lm(dem_spell_outcome == 'autocracy' ~ v2xnp_client + v2x_polyarchy + e_migdppc + as.factor(year), data = vdem_con)
 summary(cm2)
 
-cm3 <- lm(dem_spell_erosion == TRUE ~ v2xnp_client, data = vdem_dem)
+cm3 <- lm(dem_spell_erosion == TRUE ~ v2xnp_client + v2x_polyarchy + e_migdppc + as.factor(year), data = vdem_dem)
 summary(cm3)
 
-cm4 <- lm(dem_spell_erosion == TRUE ~ v2xnp_client, data = vdem_con)
+cm4 <- lm(dem_spell_erosion == TRUE ~ v2xnp_client + v2x_polyarchy + e_migdppc + as.factor(year), data = vdem_con)
 summary(cm4)
+
+match_client <- matchit(v2xnp_client >= mean(vdem_con$v2xnp_client, na.rm = TRUE) ~ 
+                          v2x_polyarchy + e_migdppc + as.factor(year), 
+                        data = vdem_con %>% filter(!is.na(v2x_polyarchy), !is.na(e_migdppc)),
+                        method = 'nearest', distance = 'glm')
+summary(match_client, un = FALSE)
+plot(match_client, type = "jitter", interactive = FALSE)
+
+vdem_client <- match.data(match_client)
+cm5 <- lm(dem_spell_outcome == 'autocracy' ~ v2xnp_client + v2x_polyarchy + e_migdppc + as.factor(year), 
+          data = vdem_client, 
+          weights = weights)
+summary(cm5)
+
+cm6 <- lm(dem_spell_erosion == TRUE ~ v2xnp_client + v2x_polyarchy + e_migdppc + as.factor(year), 
+          data = vdem_client, 
+          weights = weights)
+summary(cm6)
 
 
 ##model media----
-mm1_full <- lm(dem_spell_outcome == 'autocracy' ~ v2smonex + v2smmefra + v2smgovdom + v2smpardom + v2smfordom, data = vdem_dem)
+mm1_full <- lm(dem_spell_outcome == 'autocracy' ~ v2smonex + v2smmefra + v2smgovdom + v2smpardom + v2smfordom + v2x_polyarchy + e_migdppc + as.factor(year), data = vdem_dem)
 summary(mm1_full)
 
-mm2_full <- lm(dem_spell_outcome == 'autocracy' ~ v2smonex + v2smmefra + v2smgovdom + v2smpardom + v2smfordom, data = vdem_con)
+mm2_full <- lm(dem_spell_outcome == 'autocracy' ~ v2smonex + v2smmefra + v2smgovdom + v2smpardom + v2smfordom + v2x_polyarchy + e_migdppc + as.factor(year), data = vdem_con)
 summary(mm2_full)
 
-mm3_full <- lm(dem_spell_erosion == TRUE ~ v2smonex + v2smmefra + v2smgovdom + v2smpardom + v2smfordom, data = vdem_dem)
+mm3_full <- lm(dem_spell_erosion == TRUE ~ v2smonex + v2smmefra + v2smgovdom + v2smpardom + v2smfordom + v2x_polyarchy + e_migdppc + as.factor(year), data = vdem_dem)
 summary(mm3_full)
 
-mm4_full <- lm(dem_spell_erosion == TRUE ~ v2smonex + v2smmefra + v2smgovdom + v2smpardom + v2smfordom, data = vdem_con)
+mm4_full <- lm(dem_spell_erosion == TRUE ~ v2smonex + v2smmefra + v2smgovdom + v2smpardom + v2smfordom + v2x_polyarchy + e_migdppc + as.factor(year), data = vdem_con)
 summary(mm4_full)
+
+match_consume <- matchit(v2smonex >= mean(vdem_con$v2smonex, na.rm = TRUE) ~ 
+                           v2x_polyarchy + e_migdppc + as.factor(year), 
+                         data = vdem_con %>% filter(!is.na(v2smonex), !is.na(v2x_polyarchy), !is.na(e_migdppc)),
+                         method = 'nearest', distance = 'glm')
+summary(match_consume, un = FALSE)
+plot(match_consume, type = "jitter", interactive = FALSE)
+
+vdem_consume <- match.data(match_consume)
+mm5_consume <- lm(dem_spell_outcome == 'autocracy' ~ v2smonex + v2x_polyarchy + e_migdppc + as.factor(year), 
+                  data = vdem_consume, 
+                  weights = weights)
+summary(mm5_consume)
+
+match_fraction <- matchit(v2smmefra >= mean(vdem_con$v2smmefra, na.rm = TRUE) ~ 
+                            v2x_polyarchy + e_migdppc + as.factor(year), 
+                          data = vdem_con %>% filter(!is.na(v2smmefra), !is.na(v2x_polyarchy), !is.na(e_migdppc)),
+                          method = 'nearest', distance = 'glm')
+summary(match_fraction, un = FALSE)
+plot(match_fraction, type = "jitter", interactive = FALSE)
+
+vdem_fraction <- match.data(match_fraction)
+mm5_fraction <- lm(dem_spell_outcome == 'autocracy' ~ v2smmefra + v2x_polyarchy + e_migdppc + as.factor(year), 
+                   data = vdem_fraction, 
+                   weights = weights)
+summary(mm5_fraction)
+
+match_gov_disinfo <- matchit(v2smgovdom >= mean(vdem_con$v2smgovdom, na.rm = TRUE) ~ 
+                               v2x_polyarchy + e_migdppc + as.factor(year), 
+                             data = vdem_con %>% filter(!is.na(v2smgovdom), !is.na(v2x_polyarchy), !is.na(e_migdppc)),
+                             method = 'nearest', distance = 'glm')
+summary(match_gov_disinfo, un = FALSE)
+plot(match_gov_disinfo, type = "jitter", interactive = FALSE)
+
+vdem_gov_disinfo <- match.data(match_gov_disinfo)
+mm5_gov <- lm(dem_spell_outcome == 'autocracy' ~ v2smgovdom + v2x_polyarchy + e_migdppc + as.factor(year), 
+              data = vdem_gov_disinfo, 
+              weights = weights)
+summary(mm5_gov)
+
+match_par_disinfo <- matchit(v2smpardom >= mean(vdem_con$v2smpardom, na.rm = TRUE) ~ 
+                               v2x_polyarchy + e_migdppc + as.factor(year), 
+                             data = vdem_con %>% filter(!is.na(v2smpardom), !is.na(v2x_polyarchy), !is.na(e_migdppc)),
+                             method = 'nearest', distance = 'glm')
+summary(match_par_disinfo, un = FALSE)
+plot(match_par_disinfo, type = "jitter", interactive = FALSE)
+
+vdem_par_disinfo <- match.data(match_par_disinfo)
+mm5_par <- lm(dem_spell_outcome == 'autocracy' ~ v2smpardom + v2x_polyarchy + e_migdppc + as.factor(year), 
+              data = vdem_gov_disinfo, 
+              weights = weights)
+summary(mm5_par)
+
+match_for_disinfo <- matchit(v2smfordom >= mean(vdem_con$v2smfordom, na.rm = TRUE) ~ 
+                               v2x_polyarchy + e_migdppc + as.factor(year), 
+                             data = vdem_con %>% filter(!is.na(v2smfordom), !is.na(v2x_polyarchy), !is.na(e_migdppc)),
+                             method = 'nearest', distance = 'glm')
+summary(match_for_disinfo, un = FALSE)
+plot(match_for_disinfo, type = "jitter", interactive = FALSE)
+
+vdem_for_disinfo <- match.data(match_for_disinfo)
+mm5_for <- lm(dem_spell_outcome == 'autocracy' ~ v2smfordom + v2x_polyarchy + e_migdppc + as.factor(year), 
+              data = vdem_for_disinfo, 
+              weights = weights)
+summary(mm5_for)
 
 
 ##model polarization----
-pm1_full <- lm(dem_spell_outcome == 'autocracy' ~ v2cacamps + v2smpolsoc + v2smpolhate, data = vdem_dem)
+pm1_full <- lm(dem_spell_outcome == 'autocracy' ~ v2cacamps + v2smpolsoc + v2smpolhate + v2x_polyarchy + e_migdppc + as.factor(year), data = vdem_dem)
 summary(pm1_full)
 
-pm2_full <- lm(dem_spell_outcome == 'autocracy' ~ v2cacamps + v2smpolsoc + v2smpolhate, data = vdem_con)
+pm2_full <- lm(dem_spell_outcome == 'autocracy' ~ v2cacamps + v2smpolsoc + v2smpolhate + v2x_polyarchy + e_migdppc + as.factor(year), data = vdem_con)
 summary(pm2_full)
 
-pm3_full <- lm(dem_spell_erosion == TRUE ~ v2cacamps + v2smpolsoc + v2smpolhate, data = vdem_dem)
+pm3_full <- lm(dem_spell_erosion == TRUE ~ v2cacamps + v2smpolsoc + v2smpolhate + v2x_polyarchy + e_migdppc + as.factor(year), data = vdem_dem)
 summary(pm3_full)
 
-pm4_full <- lm(dem_spell_erosion == TRUE ~ v2cacamps + v2smpolsoc + v2smpolhate, data = vdem_con)
+pm4_full <- lm(dem_spell_erosion == TRUE ~ v2cacamps + v2smpolsoc + v2smpolhate + v2x_polyarchy + e_migdppc + as.factor(year), data = vdem_con)
 summary(pm4_full)
 
-##search for most telling time lag
+##search for most telling time lag----
 ###write custom function to find optimal time lag for regression on any set of variables
 test_lags <- function(df = vdem_con, vars) {
   model_results <- data.frame(time_lag = c(1:lag_range),
@@ -618,7 +721,7 @@ test_lags(vars = c('smmefraXsmpolsoc', 'v2smmefra', 'v2smpolsoc', 'v2x_polyarchy
 test_lags(vars = c('clientXresources', 'v2xnp_client', 'e_total_resources_percent', 'v2x_polyarchy', 'e_migdppc'))
 test_lags(vars = c('clientXcacamps', 'v2xnp_client', 'v2cacamps', 'v2x_polyarchy', 'e_migdppc'))
 
-#chart interacted variables----
+##chart interacted variables----
 lag_years = 10
 point_scale = seq(from = 0, to = 1, by = 0.05)
 df = vdem_con
@@ -743,5 +846,9 @@ mimir %>% filter(v2smpolsoc %in% c(0.25, 0.75)) %>%
 
 
 
-#notes----
+##difference in difference charts----
 
+#notes----
+#should clean up by creating new variable 'dem_spell_autocratization' to parallel 'dem_spell_erosion'
+ #then re-working 'dem_spell_outcome' to include 'erosion' for cases that eroded but did not thereafter autocratize
+ #then run linear models to predict joint outcome of either eroded or autocratized
