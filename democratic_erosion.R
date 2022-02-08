@@ -5,6 +5,7 @@ setwd('C:/Tony/git_workspace/democratic_erosion')
 dem_threshold = 0.5 #on vdem's 1-point scales
 survival_threshold = 0.5 #as a probability
 erosion_threshold = 1 #as multiple of standard deviations
+treatment_threshold = 0.75 #percentile that distinguishes high clientelism/disinfo/polarization from low
 lag_range = 10 #test time lags of dependent variables from 1 to this many years
 
 #load libraries
@@ -449,12 +450,13 @@ vdem %>% filter(consolidated_broad == TRUE, dem_spell_outcome == 'erosion') %>%
 ##spin off data frames for all democratic country-years
  ##and for all country-years within democratic spells that ever consolidated
 vdem_dem = vdem %>% filter(v2x_polyarchy >= dem_threshold)
-vdem_con <- vdem_dem %>% 
+vdem <- vdem %>% 
   group_by(dem_spell_name) %>%
   mutate(ever_consolidated = if_else(sum(consolidated_lhb == TRUE, na.rm = TRUE) > 0,
                                      TRUE,
                                      FALSE)) %>%
-  ungroup() %>%
+  ungroup() 
+vdem_con <- vdem %>%
   filter(ever_consolidated == TRUE)
 
 #predict eventual autocratization or erosion ----
@@ -891,5 +893,80 @@ mimir %>% filter(v2smpolsoc %in% c(0.25, 0.75)) %>%
 
 ##difference in difference charts----
 
+###observe polyarchy relative to treatments
+
+####dif in dif - clientelism
+ #set level that counts as being "treated" with clientelism
+clientelism_threshold <- as.numeric(quantile(vdem_con$v2xnp_client, probs = treatment_threshold))
+
+vdem$year_rel_client <- as.numeric(NA)
+vdem$client_control <- as.numeric(NA)
+for (i in seq_along(vdem$year)){
+  if (vdem$ever_consolidated[i] != TRUE) next
+  
+  #find earliest year within each dem spell that crosses treatment threshold. label zero 
+  client_year_zero <- vdem %>% filter(dem_spell_name == vdem$dem_spell_name[i]) %>%
+    filter(v2xnp_client >= clientelism_threshold) %>%
+    summarize(client_year_zero = min(year, na.rm = TRUE)) %>%
+    pull(client_year_zero)
+  
+  client_year_zero <- if_else(client_year_zero == Inf, #value is Inf if spell never crossed threshold
+                              as.numeric(NA),
+                              client_year_zero)
+  
+  #label all preceding and following years in spell, relative to that zero  
+  vdem$year_rel_client[i] <- if_else(is.na(client_year_zero),
+                                     as.numeric(NA),
+                                     vdem$year[i] - client_year_zero)
+  
+  #log control value of clientelism among all consolidated democracies in same absolute year
+  vdem$client_control[i] <- if_else(is.na(vdem$year_rel_client[i]),
+                                    as.numeric(NA),
+                                    mean(vdem$v2xnp_client[vdem$consolidated_lhb == TRUE & 
+                                                             vdem$year == vdem$year[i] &
+                                                             vdem$country_name != vdem$country_name[i]],
+                                         na.rm = TRUE))
+}
+summary(vdem$year_rel_client)
+summary(vdem$client_control)
+
+
+####dif in dif - polarization
+ #set level that counts as being "treated" 
+polsoc_threshold <- as.numeric(quantile(vdem_con$v2smpolsoc, probs = treatment_threshold))
+
+ #find earliest year within each dem spell that crosses treatment threshold. label 0
+ #label all preceding and following years in spell, relative to that zero
+vdem$year_rel_polsoc <- as.numeric(NA)
+for (i in seq_along(vdem$year)){
+  if (vdem$ever_consolidated[i] != TRUE) next
+  
+  polsoc_year_zero <- vdem %>% filter(dem_spell_name == vdem$dem_spell_name[i]) %>%
+    filter(v2smpolsoc >= polsoc_threshold) %>%
+    summarize(polsoc_year_zero = min(year, na.rm = TRUE)) %>%
+    pull(polsoc_year_zero)
+  
+  polsoc_year_zero <- if_else(polsoc_year_zero == Inf, #value is Inf if spell never crossed threshold
+                              as.numeric(NA),
+                              polsoc_year_zero)
+  
+  vdem$year_rel_polsoc[i] <- if_else(is.na(polsoc_year_zero),
+                                     as.numeric(NA),
+                                     vdem$year[i] - polsoc_year_zero)
+}
+summary(vdem$year_rel_polsoc)
+
+
+
 #notes----
 ##run matching analysis for polarization models
+
+##compare clientelism, polarization, and media trends in relative time preceding autocratization or erosion. 
+ ###for control, use average score in same absolute year among all not-doomed consolidated democracies
+
+##compare polyarchy scores in relative time before and after each treatment variable reached some critical threshold
+ ###treatments are clientelism, consumption X fractionalization, party disinfo, and societal polarization
+ ###control is polyarchy in all consolidated democracies still below that treatment threshold in same absolute year
+
+##for all consolidated spells, summarize treatment variables in first year of spell. 
+ ###some doomed democracies might have been born flawed rather than suffering onset of treatment (eg Venezuela 1959)
