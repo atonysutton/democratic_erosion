@@ -601,6 +601,9 @@ summary(mm3_full)
 mm4_full <- lm(dem_spell_erosion == TRUE ~ v2smonex + v2smmefra + v2smgovdom + v2smpardom + v2smfordom + v2x_polyarchy + e_migdppc + as.factor(year), data = vdem_con)
 summary(mm4_full)
 
+mm7_full <- lm(dem_spell_outcome != 'democracy' ~ v2smonex + v2smmefra + v2smgovdom + v2smpardom + v2smfordom + v2x_polyarchy + e_migdppc + as.factor(year), data = vdem_con)
+summary(mm7_full)
+
 match_consume <- matchit(v2smonex >= mean(vdem_con$v2smonex, na.rm = TRUE) ~ 
                            v2x_polyarchy + e_migdppc + as.factor(year), 
                          data = vdem_con %>% filter(!is.na(v2smonex), !is.na(v2x_polyarchy), !is.na(e_migdppc)),
@@ -613,6 +616,12 @@ mm5_consume <- lm(dem_spell_outcome == 'autocracy' ~ v2smonex + v2x_polyarchy + 
                   data = vdem_consume, 
                   weights = weights)
 summary(mm5_consume)
+
+mm8_consume <- lm(dem_spell_outcome != 'democracy' ~ v2smonex + v2x_polyarchy + e_migdppc + as.factor(year), 
+                  data = vdem_consume, 
+                  weights = weights)
+summary(mm8_consume)
+
 
 match_fraction <- matchit(v2smmefra >= mean(vdem_con$v2smmefra, na.rm = TRUE) ~ 
                             v2x_polyarchy + e_migdppc + as.factor(year), 
@@ -627,6 +636,12 @@ mm5_fraction <- lm(dem_spell_outcome == 'autocracy' ~ v2smmefra + v2x_polyarchy 
                    weights = weights)
 summary(mm5_fraction)
 
+mm8_fraction <- lm(dem_spell_outcome != 'democracy' ~ v2smmefra + v2x_polyarchy + e_migdppc + as.factor(year), 
+                   data = vdem_fraction, 
+                   weights = weights)
+summary(mm8_fraction)
+
+
 match_gov_disinfo <- matchit(v2smgovdom >= mean(vdem_con$v2smgovdom, na.rm = TRUE) ~ 
                                v2x_polyarchy + e_migdppc + as.factor(year), 
                              data = vdem_con %>% filter(!is.na(v2smgovdom), !is.na(v2x_polyarchy), !is.na(e_migdppc)),
@@ -639,6 +654,12 @@ mm5_gov <- lm(dem_spell_outcome == 'autocracy' ~ v2smgovdom + v2x_polyarchy + e_
               data = vdem_gov_disinfo, 
               weights = weights)
 summary(mm5_gov)
+
+mm8_gov <- lm(dem_spell_outcome != 'democracy' ~ v2smgovdom + v2x_polyarchy + e_migdppc + as.factor(year), 
+              data = vdem_gov_disinfo, 
+              weights = weights)
+summary(mm8_gov)
+
 
 match_par_disinfo <- matchit(v2smpardom >= mean(vdem_con$v2smpardom, na.rm = TRUE) ~ 
                                v2x_polyarchy + e_migdppc + as.factor(year), 
@@ -653,6 +674,12 @@ mm5_par <- lm(dem_spell_outcome == 'autocracy' ~ v2smpardom + v2x_polyarchy + e_
               weights = weights)
 summary(mm5_par)
 
+mm8_par <- lm(dem_spell_outcome != 'democracy' ~ v2smpardom + v2x_polyarchy + e_migdppc + as.factor(year), 
+              data = vdem_gov_disinfo, 
+              weights = weights)
+summary(mm8_par)
+
+
 match_for_disinfo <- matchit(v2smfordom >= mean(vdem_con$v2smfordom, na.rm = TRUE) ~ 
                                v2x_polyarchy + e_migdppc + as.factor(year), 
                              data = vdem_con %>% filter(!is.na(v2smfordom), !is.na(v2x_polyarchy), !is.na(e_migdppc)),
@@ -665,6 +692,11 @@ mm5_for <- lm(dem_spell_outcome == 'autocracy' ~ v2smfordom + v2x_polyarchy + e_
               data = vdem_for_disinfo, 
               weights = weights)
 summary(mm5_for)
+
+mm8_for <- lm(dem_spell_outcome != 'democracy' ~ v2smfordom + v2x_polyarchy + e_migdppc + as.factor(year), 
+              data = vdem_for_disinfo, 
+              weights = weights)
+summary(mm8_for)
 
 
 ##model polarization----
@@ -679,6 +711,9 @@ summary(pm3_full)
 
 pm4_full <- lm(dem_spell_erosion == TRUE ~ v2cacamps + v2smpolsoc + v2smpolhate + v2x_polyarchy + e_migdppc + as.factor(year), data = vdem_con)
 summary(pm4_full)
+
+pm7_full <- lm(dem_spell_outcome != 'democracy' ~ v2cacamps + v2smpolsoc + v2smpolhate + v2x_polyarchy + e_migdppc + as.factor(year), data = vdem_con)
+summary(pm7_full)
 
 ##search for most telling time lag----
 ###write custom function to find optimal time lag for regression on any set of variables
@@ -857,6 +892,4 @@ mimir %>% filter(v2smpolsoc %in% c(0.25, 0.75)) %>%
 ##difference in difference charts----
 
 #notes----
-#should clean up by creating new variable 'dem_spell_autocratization' to parallel 'dem_spell_erosion'
- #then re-working 'dem_spell_outcome' to include 'erosion' for cases that eroded but did not thereafter autocratize
- #then run linear models to predict joint outcome of either eroded or autocratized
+##run matching analysis for polarization models
