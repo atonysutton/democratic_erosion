@@ -19,7 +19,7 @@ library(MatchIt)
 ##regime type data from V-Dem - one row per country year 
 #vdem <- read_csv('./data/V-Dem-CY-Full+Others-v11.1.csv')
 
-##trim to a manageable file size by selecting only relevent variables
+##trim to a manageable file size by selecting only relevant variables
 #vdem <- vdem %>% select(country_name, country_text_id, year, COWcode,
 #                        v2x_polyarchy, v2x_libdem, v2x_partipdem, v2x_delibdem, v2x_egaldem,
 #                        v2xnp_client, v2elvotbuy, v2dlencmps, v2psprlnks, v2x_elecreg,
@@ -241,9 +241,9 @@ length_threshold <- vdem %>%
   filter(v2x_polyarchy >= dem_threshold) %>%
   group_by(dem_spell_running) %>%
   summarize(outcome_rate = sum(dem_spell_outcome == 'democracy') / n()) %>%
-  filter(outcome_rate < survival_threshold) %>%
-  summarize(last_cohort = max(dem_spell_running)) %>%
-  pull(last_cohort) + 1
+  filter(outcome_rate >= survival_threshold) %>%
+  summarize(last_cohort = min(dem_spell_running)) %>%
+  pull(last_cohort)
 
 ##compare vdem high level indexes
  ##the four other varieties of democracy tend to score lower than polyarchy
@@ -409,14 +409,20 @@ vdem <- vdem %>%
   ungroup()
 summary(vdem$dem_spell_erosion)
 
+vdem$dem_spell_outcome <- case_when(vdem$dem_spell_outcome == 'autocracy' ~ 'autocracy',
+                                    vdem$dem_spell_erosion == TRUE ~ 'erosion',
+                                    TRUE ~ as.character(vdem$dem_spell_outcome))
+vdem$dem_spell_outcome <- as.factor(vdem$dem_spell_outcome)
+
 ##review available cases against which to build predictive models 
 ###show full list of consolidated democracies, by outcome
 vdem %>% 
   filter(consolidated_lhb == TRUE) %>% 
   group_by(dem_spell_name) %>%
   summarize(outcome = case_when(sum(dem_spell_outcome == 'autocracy') > 0 ~ 'autocratized',
-                                sum(erode) > 0 ~ 'eroded',
+                                sum(dem_spell_erosion == TRUE) > 0 ~ 'eroded',
                                 TRUE ~ 'remained_democratic')) %>%
+  arrange(outcome) %>%
   print(n = 100)
 
 ###examine cases where consolidated regime autocratized
@@ -430,14 +436,14 @@ vdem %>% filter(consolidated_high == TRUE, dem_spell_outcome == 'autocracy') %>%
 vdem %>% filter(consolidated_broad == TRUE, dem_spell_outcome == 'autocracy') %>% 
   distinct(dem_spell_name)
   
-###examine cases where consolidated regime eroded
-vdem %>% filter(consolidated_lhb == TRUE, erode == TRUE) %>% 
+###examine cases where consolidated regime eroded but didn't autocratize
+vdem %>% filter(consolidated_lhb == TRUE, dem_spell_outcome == 'erosion') %>% 
   distinct(dem_spell_name)
-vdem %>% filter(consolidated_long == TRUE, erode == TRUE) %>% 
+vdem %>% filter(consolidated_long == TRUE, dem_spell_outcome == 'erosion') %>% 
   distinct(dem_spell_name)
-vdem %>% filter(consolidated_high == TRUE, erode == TRUE) %>% 
+vdem %>% filter(consolidated_high == TRUE, dem_spell_outcome == 'erosion') %>% 
   distinct(dem_spell_name)
-vdem %>% filter(consolidated_broad == TRUE, erode == TRUE) %>% 
+vdem %>% filter(consolidated_broad == TRUE, dem_spell_outcome == 'erosion') %>% 
   distinct(dem_spell_name)
 
 ##spin off data frames for all democratic country-years
@@ -451,22 +457,15 @@ vdem_con <- vdem_dem %>%
   ungroup() %>%
   filter(ever_consolidated == TRUE)
 
-##label years relative to eventual erosion or autocratization, with control group scores
-for (i in seq_along(vdem_con$year)){
-  
-  
-}
-
 #predict eventual autocratization or erosion ----
 
 ##produce a few illustrative statistics
-
 
 ###highest polyarchy peak that later autocratized
 vdem %>% 
   filter(dem_spell_outcome == 'autocracy') %>% 
   group_by(dem_spell_name) %>%
-  summarize(farthest_faller = max(dem_spell_peak), last_year = max(year))
+  summarize(farthest_faller = max(dem_spell_peak), last_year = max(year)) %>%
   arrange(desc(farthest_faller))
 
 ###distribution of lowest polyarchy scores after a country reached a high threshold
@@ -547,6 +546,8 @@ vdem %>% select(v2cacamps, v2smpolsoc, v2smpolhate) %>%
 #m4 = consolidated cases, predict erosion
 #m5 = consolidated cases, predict autocratization using matching for controls
 #m6 = consolidated cases, predict erosion using matching for controls
+#m7 = consolidated cases, predict [autocratization or erosion]
+#m8 = consolidated cases, predict [autocratization or erosion] using matching
 
 ##model clientelism ----
 cm1 <- lm(dem_spell_outcome == 'autocracy' ~ v2xnp_client + v2x_polyarchy + e_migdppc + as.factor(year), data = vdem_dem)
@@ -567,7 +568,6 @@ match_client <- matchit(v2xnp_client >= mean(vdem_con$v2xnp_client, na.rm = TRUE
                         method = 'nearest', distance = 'glm')
 summary(match_client, un = FALSE)
 plot(match_client, type = "jitter", interactive = FALSE)
-
 vdem_client <- match.data(match_client)
 cm5 <- lm(dem_spell_outcome == 'autocracy' ~ v2xnp_client + v2x_polyarchy + e_migdppc + as.factor(year), 
           data = vdem_client, 
@@ -578,6 +578,14 @@ cm6 <- lm(dem_spell_erosion == TRUE ~ v2xnp_client + v2x_polyarchy + e_migdppc +
           data = vdem_client, 
           weights = weights)
 summary(cm6)
+
+cm7 <- lm(dem_spell_outcome != 'democracy' ~ v2xnp_client + v2x_polyarchy + e_migdppc + as.factor(year), data = vdem_con)
+summary(cm7)
+
+cm8 <- lm(dem_spell_outcome != 'democracy' ~ v2xnp_client + v2x_polyarchy + e_migdppc + as.factor(year), 
+          data = vdem_client, 
+          weights = weights)
+summary(cm8)
 
 
 ##model media----
