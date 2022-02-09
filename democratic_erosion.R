@@ -5,7 +5,9 @@ setwd('C:/Tony/git_workspace/democratic_erosion')
 dem_threshold = 0.5 #on vdem's 1-point scales
 survival_threshold = 0.5 #as a probability
 erosion_threshold = 1 #as multiple of standard deviations
-treatment_threshold = 0.75 #percentile that distinguishes high clientelism/disinfo/polarization from low
+treatment_threshold = 0.9 #percentile that distinguishes high clientelism/disinfo/polarization from low
+                          #must hold high threshold else few democratic spells experience onset of "treatment"
+                          # because they start the spell already above the threshold
 lag_range = 10 #test time lags of dependent variables from 1 to this many years
 
 #load libraries
@@ -897,64 +899,95 @@ mimir %>% filter(v2smpolsoc %in% c(0.25, 0.75)) %>%
 
 ####dif in dif - clientelism
  #set level that counts as being "treated" with clientelism
-clientelism_threshold <- as.numeric(quantile(vdem_con$v2xnp_client, probs = treatment_threshold))
+clientelism_threshold <- as.numeric(quantile(vdem_con$v2xnp_client, probs = treatment_threshold, na.rm = TRUE))
 
+ #label years relative to onset of clientelism treatment 
+ #only count as treatment if happens while inside a democratic spell,
+ # and if first year of spell did not see high clientelism
+ #but year count extends ten years prior and after the treatment, regardless of democratic status in those years
 vdem$year_rel_client <- as.numeric(NA)
-vdem$client_control <- as.numeric(NA)
+vdem$client_control_poly <- as.numeric(NA)
 for (i in seq_along(vdem$year)){
-  if (vdem$ever_consolidated[i] != TRUE) next
+  #skip country-years that are not in democratic spells or lack score
+  if (is.na(vdem$dem_spell_name[i])) next
+  if (is.na(vdem$v2xnp_client[i])) next
+  #skip country-years that are in democratic spells that began with high score
+  if (vdem$v2xnp_client[!is.na(vdem$dem_spell_name) &
+                        vdem$dem_spell_name == vdem$dem_spell_name[i] &
+                        !is.na(vdem$dem_spell_running) &
+                        vdem$dem_spell_running == 0] > clientelism_threshold) next
   
-  #find earliest year within each dem spell that crosses treatment threshold. label zero 
+  #find earliest year within each dem spell that crosses treatment threshold. 
   client_year_zero <- vdem %>% filter(dem_spell_name == vdem$dem_spell_name[i]) %>%
     filter(v2xnp_client >= clientelism_threshold) %>%
     summarize(client_year_zero = min(year, na.rm = TRUE)) %>%
     pull(client_year_zero)
   
-  client_year_zero <- if_else(client_year_zero == Inf, #value is Inf if spell never crossed threshold
+  #renumber infinite values as nulls
+  #value is Inf if spell never crossed threshold
+  client_year_zero <- if_else((client_year_zero == Inf | client_year_zero == -Inf), 
                               as.numeric(NA),
                               client_year_zero)
   
+  if (is.na(client_year_zero)) next
+  
+  #label year of onset as relative year zero
+  vdem$year_rel_client[i] <- if_else(vdem$year[i] == client_year_zero,
+                                     0,
+                                     as.numeric(NA))
+}
+for (i in seq_along(vdem$year)){
+  #locate treatment onset within 10 years of each country-year
+  client_year_zero <- vdem %>% 
+    filter(country_name == vdem$country_name[i] &
+             year >= (vdem$year[i] - 10) &
+             year <= (vdem$year[i] + 10) &
+             year_rel_client == 0) %>%
+    summarize(client_year_zero = min(year)) %>%
+    pull(client_year_zero)
+
+  #renumber infinite values as nulls
+  #value is Inf if spell never crossed threshold
+  client_year_zero <- if_else((client_year_zero == Inf | client_year_zero == -Inf), 
+                              as.numeric(NA),
+                              client_year_zero)
+    
+  if (is.na(client_year_zero)) next
+  
   #label all preceding and following years in spell, relative to that zero  
-  vdem$year_rel_client[i] <- if_else(is.na(client_year_zero),
-                                     as.numeric(NA),
-                                     vdem$year[i] - client_year_zero)
+  vdem$year_rel_client[i] = vdem$year[i] - client_year_zero
   
   #log control value of clientelism among all consolidated democracies in same absolute year
-  vdem$client_control[i] <- if_else(is.na(vdem$year_rel_client[i]),
-                                    as.numeric(NA),
-                                    mean(vdem$v2xnp_client[vdem$consolidated_lhb == TRUE & 
-                                                             vdem$year == vdem$year[i] &
-                                                             vdem$country_name != vdem$country_name[i]],
-                                         na.rm = TRUE))
+  vdem$client_control_poly[i] <- if_else(is.na(vdem$year_rel_client[i]),
+                                         as.numeric(NA),
+                                         mean(vdem$v2x_polyarchy[vdem$v2x_polyarchy >= dem_threshold & 
+                                                                   vdem$year == vdem$year[i] &
+                                                                   vdem$country_name != vdem$country_name[i]],
+                                              na.rm = TRUE))
 }
 summary(vdem$year_rel_client)
-summary(vdem$client_control)
+summary(vdem$client_control_poly)
+
+vdem %>%
+  filter(!is.na(year_rel_client)) %>%
+  group_by(year_rel_client) %>%
+  summarize(polyarchy_client = mean(v2x_polyarchy, na.rm = TRUE),
+            polyarchy_control = mean(client_control_poly, na.rm = TRUE)) %>%
+  ggplot(aes(x = year_rel_client))+
+  geom_point(aes(y = polyarchy_client), color = 'firebrick')+
+  geom_smooth(data = . %>% filter(year_rel_client < 0),
+    aes(y = polyarchy_client), color = 'firebrick')+
+  geom_smooth(data = . %>% filter(year_rel_client > 0),
+              aes(y = polyarchy_client), color = 'firebrick')+
+  geom_point(aes(y = polyarchy_control), color = 'steelblue')+
+  geom_smooth(data = . %>% filter(year_rel_client < 0),
+              aes(y = polyarchy_control), color = 'steelblue')+
+  geom_smooth(data = . %>% filter(year_rel_client > 0),
+              aes(y = polyarchy_control), color = 'steelblue')+
+  coord_cartesian(xlim = c(-10,10))+
+  geom_vline(xintercept = 0, linetype = 'dashed')
 
 
-####dif in dif - polarization
- #set level that counts as being "treated" 
-polsoc_threshold <- as.numeric(quantile(vdem_con$v2smpolsoc, probs = treatment_threshold))
-
- #find earliest year within each dem spell that crosses treatment threshold. label 0
- #label all preceding and following years in spell, relative to that zero
-vdem$year_rel_polsoc <- as.numeric(NA)
-for (i in seq_along(vdem$year)){
-  if (vdem$ever_consolidated[i] != TRUE) next
-  
-  polsoc_year_zero <- vdem %>% filter(dem_spell_name == vdem$dem_spell_name[i]) %>%
-    filter(v2smpolsoc >= polsoc_threshold) %>%
-    summarize(polsoc_year_zero = min(year, na.rm = TRUE)) %>%
-    pull(polsoc_year_zero)
-  
-  polsoc_year_zero <- if_else(polsoc_year_zero == Inf, #value is Inf if spell never crossed threshold
-                              as.numeric(NA),
-                              polsoc_year_zero)
-  
-  vdem$year_rel_polsoc[i] <- if_else(is.na(polsoc_year_zero),
-                                     as.numeric(NA),
-                                     vdem$year[i] - polsoc_year_zero)
-}
-summary(vdem$year_rel_polsoc)
 
 
 
