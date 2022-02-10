@@ -10,6 +10,12 @@ treatment_threshold = 0.9 #percentile that distinguishes high clientelism/disinf
                           # because they start the spell already above the threshold
 lag_range = 10 #test time lags of dependent variables from 1 to this many years
 
+dem_color = 'dodgerblue'
+client_color = 'sienna'
+media_color = 'forestgreen'
+disinfo_color = 'olivedrab3'
+polar_color = 'tomato1'
+
 #load libraries
 library(tidyverse)
 library(scales)
@@ -213,8 +219,25 @@ vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
   group_by(polyarchy_cohort = round(v2x_polyarchy, digits = 2)) %>%
   mutate(outcome_rate = sum(dem_spell_outcome == 'democracy') / n()) %>%
   ggplot(aes(x = polyarchy_cohort, y = outcome_rate))+
-  geom_point()+
-  geom_smooth()
+  geom_point(size = 4, color = dem_color)+
+  geom_smooth(method = 'loess', size = 2.5, color = dem_color)+
+  coord_cartesian(ylim = c(0,1))+
+  geom_hline(yintercept = 0.5, linetype = 'dashed')+
+  geom_hline(yintercept = 0.8, linetype = 'dashed')+
+  theme_minimal()+
+  labs(title = 'Democracy Survival Rates',
+       subtitle = '  by polyarchy height at year of observation',
+       y = 'Survival Rate',
+       x = 'V-Dem Polyarchy Score')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16)) 
+ggsave(filename = "./visuals/democracy_survival_height.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+
 
 ##calculate minimum polyarchy to predict survival above threshold
 height_threshold <- vdem %>% 
@@ -226,14 +249,32 @@ height_threshold <- vdem %>%
   pull(last_cohort) + 0.01
   
 ##chart outcome by democracy spell length
-vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
+vdem %>% 
+  filter(v2x_polyarchy >= dem_threshold) %>%
   group_by(dem_spell_running) %>%
   mutate(outcome_rate = sum(dem_spell_outcome == 'democracy') / n()) %>%
   ggplot(aes(x = dem_spell_running, y = outcome_rate))+
-  geom_line()+
-  coord_cartesian(xlim = c(0,70))
+  geom_point(size = 1.5, color = dem_color)+
+  geom_smooth(method = 'loess', size = 2.5, color = dem_color)+
+  coord_cartesian(ylim = c(0,1), xlim = c(0,110))+
+  geom_hline(yintercept = 0.5, linetype = 'dashed')+
+  geom_hline(yintercept = 0.8, linetype = 'dashed')+
+  theme_minimal()+
+  labs(title = 'Democracy Survival Rates',
+       subtitle = '  by length of spell at year of observation',
+       y = 'Survival Rate',
+       x = 'Consecutive Years as Democracy (V-Dem Polyarchy)')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16)) 
+ggsave(filename = "./visuals/democracy_survival_length.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
 
-##confirm that just over half of all democracy spells lasted
+
+##calculate fraction of all democracy spells that lasted
 vdem %>% filter(dem_spell_running == 0) %>%
   summarize(count = n(), 
             stayed_democracies = sum(dem_spell_outcome == 'democracy'),
@@ -261,49 +302,93 @@ vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
   group_by(libdem_cohort = round(v2x_libdem, digits = 2)) %>%
   mutate(outcome_rate = sum(dem_spell_outcome == 'democracy') / n()) %>%
   ggplot(aes(x = libdem_cohort, y = outcome_rate))+
-  geom_point()+
-  geom_smooth()+
+  geom_point(size = 4, color = dem_color)+
+  geom_smooth(method = 'loess', size = 2.5, color = dem_color)+
   coord_cartesian(ylim = c(0,1))+
-  scale_y_continuous(minor_breaks = seq(from = 0, to = 1, by = 0.1),
-                     breaks = c(0,1))+
-  geom_hline(yintercept = 0.5)+
-  geom_hline(yintercept = 0.8)
+  geom_hline(yintercept = 0.5, linetype = 'dashed')+
+  geom_hline(yintercept = 0.8, linetype = 'dashed')+
+  theme_minimal()+
+  labs(title = 'Democracy Survival Rates',
+       subtitle = '  by liberal democracy at year of observation',
+       y = 'Survival Rate',
+       x = 'V-Dem Liberal Democracy Index')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16)) 
+ggsave(filename = "./visuals/democracy_survival_libdem.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
 
 vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
   group_by(partipdem_cohort = round(v2x_partipdem, digits = 2)) %>%
   mutate(outcome_rate = sum(dem_spell_outcome == 'democracy') / n()) %>%
   ggplot(aes(x = partipdem_cohort, y = outcome_rate))+
-  geom_point()+
-  geom_smooth()+
+  geom_point(size = 4, color = dem_color)+
+  geom_smooth(method = 'loess', size = 2.5, color = dem_color)+
   coord_cartesian(ylim = c(0,1))+
-  scale_y_continuous(minor_breaks = seq(from = 0, to = 1, by = 0.1),
-                     breaks = c(0,0.5,1))+
-  geom_hline(yintercept = 0.5)+
-  geom_hline(yintercept = 0.8)
+  geom_hline(yintercept = 0.5, linetype = 'dashed')+
+  geom_hline(yintercept = 0.8, linetype = 'dashed')+
+  theme_minimal()+
+  labs(title = 'Democracy Survival Rates',
+       subtitle = '  by participatory democracy at year of observation',
+       y = 'Survival Rate',
+       x = 'V-Dem Participatory Democracy Index')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16)) 
+ggsave(filename = "./visuals/democracy_survival_partipdem.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
 
 vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
   group_by(delibdem_cohort = round(v2x_delibdem, digits = 2)) %>%
   mutate(outcome_rate = sum(dem_spell_outcome == 'democracy') / n()) %>%
   ggplot(aes(x = delibdem_cohort, y = outcome_rate))+
-  geom_point()+
-  geom_smooth()+
+  geom_point(size = 4, color = dem_color)+
+  geom_smooth(method = 'loess', size = 2.5, color = dem_color)+
   coord_cartesian(ylim = c(0,1))+
-  scale_y_continuous(minor_breaks = seq(from = 0, to = 1, by = 0.1),
-                     breaks = c(0,0.5,1))+
-  geom_hline(yintercept = 0.5)+
-  geom_hline(yintercept = 0.8)
+  geom_hline(yintercept = 0.5, linetype = 'dashed')+
+  geom_hline(yintercept = 0.8, linetype = 'dashed')+
+  theme_minimal()+
+  labs(title = 'Democracy Survival Rates',
+       subtitle = '  by deliberative democracy at year of observation',
+       y = 'Survival Rate',
+       x = 'V-Dem Deliberative Democracy Index')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16)) 
+ggsave(filename = "./visuals/democracy_survival_delibdem.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
 
 vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
   group_by(egaldem_cohort = round(v2x_egaldem, digits = 2)) %>%
   mutate(outcome_rate = sum(dem_spell_outcome == 'democracy') / n()) %>%
   ggplot(aes(x = egaldem_cohort, y = outcome_rate))+
-  geom_point()+
-  geom_smooth()+
+  geom_point(size = 4, color = dem_color)+
+  geom_smooth(method = 'loess', size = 2.5, color = dem_color)+
   coord_cartesian(ylim = c(0,1))+
-  scale_y_continuous(minor_breaks = seq(from = 0, to = 1, by = 0.1),
-                     breaks = c(0,0.5,1))+
-  geom_hline(yintercept = 0.5)+
-  geom_hline(yintercept = 0.8)
+  geom_hline(yintercept = 0.5, linetype = 'dashed')+
+  geom_hline(yintercept = 0.8, linetype = 'dashed')+
+  theme_minimal()+
+  labs(title = 'Democracy Survival Rates',
+       subtitle = '  by egalitarian democracy at year of observation',
+       y = 'Survival Rate',
+       x = 'V-Dem Egalitarian Democracy Index')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16)) 
+ggsave(filename = "./visuals/democracy_survival_egaldem.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
 
 ##calculate survival rate for democracies scoring well on all indexes
 vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
@@ -418,7 +503,13 @@ vdem$dem_spell_outcome <- case_when(vdem$dem_spell_outcome == 'autocracy' ~ 'aut
 vdem$dem_spell_outcome <- as.factor(vdem$dem_spell_outcome)
 
 ##review available cases against which to build predictive models 
-###show full list of consolidated democracies, by outcome
+###count and itemize consolidated democracies, by outcome
+vdem %>% 
+  filter(consolidated_lhb == TRUE) %>% 
+  group_by(dem_spell_outcome) %>%
+  summarize(n_distinct(dem_spell_name))
+  
+
 vdem %>% 
   filter(consolidated_lhb == TRUE) %>% 
   group_by(dem_spell_name) %>%
@@ -460,6 +551,177 @@ vdem <- vdem %>%
   ungroup() 
 vdem_con <- vdem %>%
   filter(ever_consolidated == TRUE)
+
+#summary statistics ----
+
+##year range
+summary(vdem$year) #full data set
+vdem %>% filter(v2x_polyarchy >= dem_threshold) %>% summarize(min(year)) #first year with democracy
+vdem %>% filter(!is.na(v2xnp_client)) %>% summarize(min(year), max(year), n_distinct(country_name))
+vdem %>% filter(!is.na(v2cacamps)) %>% summarize(min(year), max(year), n_distinct(country_name))
+vdem %>% filter(!is.na(smonexXsmmefra)) %>% summarize(min(year), max(year), n_distinct(country_name))
+vdem %>% filter(!is.na(v2smpardom)) %>% summarize(min(year), max(year), n_distinct(country_name))
+
+##number of regimes
+n_distinct(vdem$country_name)
+vdem %>% filter(!is.na(dem_spell_name)) %>% summarize(n_distinct(country_name))
+vdem %>% filter(!is.na(dem_spell_name)) %>% summarize(n_distinct(dem_spell_name))
+
+##distribution of variables
+ggplot(data = vdem, aes(x = v2x_polyarchy))+
+  geom_histogram(bins = 20, fill = 'dodgerblue', color = 'white')+
+  theme_minimal()+
+  labs(title = 'Distribution of Democracy',
+       subtitle = '  across all country-years',
+       y = '',
+       x = 'V-Dem Polyarchy Score')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.text.y = element_blank()) 
+ggsave(filename = "./visuals/democracy_histogram_all.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+
+vdem %>% filter(v2x_polyarchy >= dem_threshold) %>%
+ggplot(aes(x = v2x_polyarchy))+
+  geom_histogram(bins = 20, fill = 'dodgerblue', color = 'white')+
+  theme_minimal()+
+  labs(title = 'Distribution of Democracy',
+       subtitle = '  across democratic country-years',
+       y = '',
+       x = 'V-Dem Polyarchy Score')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.text.y = element_blank()) 
+ggsave(filename = "./visuals/democracy_histogram_dems.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+
+vdem %>% 
+  ggplot(aes(x = v2xnp_client))+
+  geom_histogram(bins = 20, fill = client_color, color = 'white')+
+  theme_minimal()+
+  labs(title = 'Distribution of Clientelism',
+       subtitle = '  across all country-years',
+       y = '',
+       x = 'V-Dem Clientelism Index')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.text.y = element_blank()) 
+ggsave(filename = "./visuals/client_histogram.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+
+vdem %>% 
+  ggplot(aes(x = v2cacamps))+
+  geom_histogram(bins = 20, fill = polar_color, color = 'white')+
+  theme_minimal()+
+  labs(title = 'Distribution of Polarization',
+       subtitle = '  across all country-years',
+       y = '',
+       x = 'V-Dem Political Polarization Index')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.text.y = element_blank()) 
+ggsave(filename = "./visuals/polar_histogram.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+
+vdem %>% 
+  ggplot(aes(x = smonexXsmmefra))+
+  geom_histogram(bins = 20, fill = media_color, color = 'white')+
+  theme_minimal()+
+  labs(title = 'Distribution of Media Use and Fractionalization',
+       subtitle = '  across all country-years',
+       y = '',
+       x = 'V-Dem Online Media Use X Fractionalization')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.text.y = element_blank()) 
+ggsave(filename = "./visuals/media_histogram.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+
+vdem %>% 
+  filter(!is.na(smonexXsmmefra)) %>%
+  group_by(year_factor = as.factor(year)) %>%
+  summarize(avg_smonexXsmmefra = mean(smonexXsmmefra)) %>%
+  ggplot(aes(x = year_factor, y = avg_smonexXsmmefra))+
+  geom_point(size = 5, color = media_color)+
+  theme_minimal()+
+  scale_x_discrete(breaks = c(2000,2005,2010,2015,2020))+
+  labs(title = 'Rise in Media Use and Fractionalization',
+       subtitle = '  yearly averages across all countries',
+       y = 'V-Dem Media Use  X Fractionalization',
+       x = '')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16)) 
+ggsave(filename = "./visuals/media_chronology.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+
+vdem %>% 
+  ggplot(aes(x = v2smpardom))+
+  geom_histogram(bins = 20, fill = disinfo_color, color = 'white')+
+  theme_minimal()+
+  labs(title = 'Distribution of Party Disinformation',
+       subtitle = '  across all country-years',
+       y = '',
+       x = 'V-Dem Index of Party Disinformation')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.text.y = element_blank()) 
+ggsave(filename = "./visuals/par_disinfo_histogram.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+
+vdem %>% 
+  filter(!is.na(v2smpardom)) %>%
+  group_by(year_factor = as.factor(year)) %>%
+  summarize(avg_v2smpardom = mean(v2smpardom)) %>%
+  ggplot(aes(x = year_factor, y = avg_v2smpardom))+
+  geom_point(size = 5, color = disinfo_color)+
+  theme_minimal()+
+  scale_x_discrete(breaks = c(2000,2005,2010,2015,2020))+
+  labs(title = 'Rise in Party Disinformation',
+       subtitle = '  yearly averages across all countries',
+       y = 'V-Dem Index of Party Disinformation',
+       x = '')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16)) 
+ggsave(filename = "./visuals/par_disinfo_chronology.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
 
 #predict eventual autocratization or erosion ----
 
@@ -768,6 +1030,36 @@ test_lags(vars = c('smmefraXsmpolsoc', 'v2smmefra', 'v2smpolsoc', 'v2x_polyarchy
 test_lags(vars = c('clientXresources', 'v2xnp_client', 'e_total_resources_percent', 'v2x_polyarchy', 'e_migdppc'))
 test_lags(vars = c('clientXcacamps', 'v2xnp_client', 'v2cacamps', 'v2x_polyarchy', 'e_migdppc'))
 
+
+##run models at best time lag
+vdem <- vdem %>% 
+  group_by(country_name) %>%
+  arrange(year) %>%
+  mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = 10)) %>%
+  ungroup()
+vdem$polyarchy_change <- vdem$v2x_polyarchy_lagged - vdem$v2x_polyarchy
+
+cm_print <- lm(polyarchy_change ~ v2xnp_client + v2x_polyarchy + e_migdppc + as.factor(year), 
+               data = (vdem %>% filter(consolidated_lhb == TRUE)))
+summary(cm_print)
+
+pm_print <- lm(polyarchy_change ~ v2cacamps + v2x_polyarchy + e_migdppc + as.factor(year), 
+               data = (vdem %>% filter(consolidated_lhb == TRUE)))
+summary(pm_print)
+
+mm_print <- lm(polyarchy_change ~ (v2smonex * v2smmefra) + v2x_polyarchy + e_migdppc + as.factor(year), 
+               data = (vdem %>% filter(consolidated_lhb == TRUE)))
+summary(mm_print)
+
+dm_print <- lm(polyarchy_change ~ v2smpardom + v2x_polyarchy + e_migdppc + as.factor(year), 
+               data = (vdem %>% filter(consolidated_lhb == TRUE)))
+summary(dm_print)
+
+fullm_print <- lm(polyarchy_change ~ v2xnp_client + v2cacamps + (v2smonex * v2smmefra) + v2smpardom + v2x_polyarchy + e_migdppc + as.factor(year), 
+                  data = (vdem %>% filter(consolidated_lhb == TRUE)))
+summary(fullm_print)
+
+
 ##chart interacted variables----
 lag_years = 10
 point_scale = seq(from = 0, to = 1, by = 0.05)
@@ -795,19 +1087,40 @@ ggplot(aes(x = v2smpardom, y = expected_polyarchy, color = as.factor(v2smmefra))
 mimir <- data.frame(v2smonex = rep(point_scale, times = length(point_scale)),
                     v2smmefra = rep(point_scale, each = length(point_scale)),
                     v2x_polyarchy = median(vdem_con$v2x_polyarchy[df$v2x_polyarchy >= 0.5], na.rm = TRUE),
-                    e_migdppc = median(vdem_con$e_migdppc[df$v2x_polyarchy >= 0.5], na.rm = TRUE))
-wdf <- vdem_con %>%
+                    e_migdppc = median(vdem_con$e_migdppc[df$v2x_polyarchy >= 0.5], na.rm = TRUE),
+                    year = as.factor(2010))
+wdf <- vdem %>%
   group_by(country_name) %>%
   arrange(year) %>%
   mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = lag_years)) %>%
-  ungroup()
+  ungroup() %>%
+  filter(consolidated_lhb == TRUE)
 wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
-wm <- lm(polyarchy_change ~ v2smonex * v2smmefra + v2x_polyarchy + e_migdppc, data = wdf)
+wm <- lm(polyarchy_change ~ v2smonex * v2smmefra + v2x_polyarchy + e_migdppc + as.factor(year), data = wdf)
 
 mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mimir))
 mimir %>% filter(v2smmefra %in% c(0.25, 0.75)) %>%
   ggplot(aes(x = v2smonex, y = expected_polyarchy, color = as.factor(v2smmefra)))+
-  geom_line()
+  geom_line(size = 2.5)+
+  scale_color_manual(guide = 'none',   #remove one legend (color, alpha, fill...)
+                     values = c(media_color, disinfo_color))+
+  theme_minimal()+
+  labs(title = 'Online Use X Fractionalization',
+       subtitle = '  affect democracy 10 years later',
+       y = 'Predicted Polyarchy Change',
+       x = 'Online Media Consumption')+
+  annotate('text', label = 'at low fractionalization', color = media_color, size = 7, x = 0.25, y = -0.04)+
+  annotate('text', label = 'at high fractionalization', color = disinfo_color, size = 7, x = 0.66, y = -0.125)+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        axis.title.y = element_text(margin = margin(r = 8)),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16),
+        legend.position = 'none') 
+ggsave(filename = "./visuals/model_online_fract_inter.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
 
 ##online consumption by foreign disinformation
 mimir <- data.frame(v2smonex = rep(point_scale, times = length(point_scale)),
