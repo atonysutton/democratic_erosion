@@ -894,7 +894,6 @@ mimir %>% filter(v2smpolsoc %in% c(0.25, 0.75)) %>%
 
 
 ##difference in difference charts----
-
 ###observe polyarchy relative to treatments
 
 ####dif in dif - clientelism
@@ -988,14 +987,284 @@ vdem %>%
   geom_vline(xintercept = 0, linetype = 'dashed')
 
 
+####dif in dif - polarization
+#set level that counts as being "treated" with polarization
+polarization_threshold <- as.numeric(quantile(vdem_con$v2cacamps, probs = treatment_threshold, na.rm = TRUE))
 
+#label years relative to onset of polarization treatment 
+#only count as treatment if happens while inside a democratic spell,
+# and if first year of spell did not see high polarization
+#but year count extends ten years prior and after the treatment, regardless of democratic status in those years
+vdem$year_rel_polar <- as.numeric(NA)
+vdem$polar_control_poly <- as.numeric(NA)
+for (i in seq_along(vdem$year)){
+  #skip country-years that are not in democratic spells or lack score
+  if (is.na(vdem$dem_spell_name[i])) next
+  if (is.na(vdem$v2cacamps[i])) next
+  
+  #find earliest year within each dem spell that crosses treatment threshold. 
+  polar_year_zero <- vdem %>% filter(dem_spell_name == vdem$dem_spell_name[i]) %>%
+    filter(v2cacamps >= polarization_threshold) %>%
+    summarize(polar_year_zero = min(year, na.rm = TRUE)) %>%
+    pull(polar_year_zero)
+  
+  #skip country-years that are in democratic spells that began with high score
+  if (vdem$year[!is.na(vdem$dem_spell_name) &
+                vdem$dem_spell_name == vdem$dem_spell_name[i] &
+                !is.na(vdem$dem_spell_running) &
+                vdem$dem_spell_running == 0] == polar_year_zero) next
+  
+  #renumber infinite values as nulls
+  #value is Inf if spell never crossed threshold
+  polar_year_zero <- if_else((polar_year_zero == Inf | polar_year_zero == -Inf), 
+                             as.numeric(NA),
+                             polar_year_zero)
+  
+  if (is.na(polar_year_zero)) next
+  
+  #label year of onset as relative year zero
+  vdem$year_rel_polar[i] <- if_else(vdem$year[i] == polar_year_zero,
+                                    0,
+                                    as.numeric(NA))
+}
+for (i in seq_along(vdem$year)){
+  #locate treatment onset within 10 years of each country-year
+  polar_year_zero <- vdem %>% 
+    filter(country_name == vdem$country_name[i] &
+             year >= (vdem$year[i] - 10) &
+             year <= (vdem$year[i] + 10) &
+             year_rel_polar == 0) %>%
+    summarize(polar_year_zero = min(year)) %>%
+    pull(polar_year_zero)
+  
+  #renumber infinite values as nulls
+  #value is Inf if spell never crossed threshold
+  polar_year_zero <- if_else((polar_year_zero == Inf | polar_year_zero == -Inf), 
+                             as.numeric(NA),
+                             polar_year_zero)
+  
+  if (is.na(polar_year_zero)) next
+  
+  #label all preceding and following years in spell, relative to that zero  
+  vdem$year_rel_polar[i] = vdem$year[i] - polar_year_zero
+  
+  #log control value of polarization among all consolidated democracies in same absolute year
+  vdem$polar_control_poly[i] <- if_else(is.na(vdem$year_rel_polar[i]),
+                                        as.numeric(NA),
+                                        mean(vdem$v2x_polyarchy[vdem$v2x_polyarchy >= dem_threshold & 
+                                                                  vdem$year == vdem$year[i] &
+                                                                  vdem$country_name != vdem$country_name[i]],
+                                             na.rm = TRUE))
+}
+summary(vdem$year_rel_polar)
+summary(vdem$polar_control_poly)
+
+vdem %>%
+  filter(!is.na(year_rel_polar)) %>%
+  group_by(year_rel_polar) %>%
+  summarize(polyarchy_polar = mean(v2x_polyarchy, na.rm = TRUE),
+            polyarchy_control = mean(polar_control_poly, na.rm = TRUE)) %>%
+  ggplot(aes(x = year_rel_polar))+
+  geom_point(aes(y = polyarchy_polar), color = 'firebrick')+
+  geom_smooth(data = . %>% filter(year_rel_polar < 0),
+              aes(y = polyarchy_polar), color = 'firebrick')+
+  geom_smooth(data = . %>% filter(year_rel_polar > 0),
+              aes(y = polyarchy_polar), color = 'firebrick')+
+  geom_point(aes(y = polyarchy_control), color = 'steelblue')+
+  geom_smooth(data = . %>% filter(year_rel_polar < 0),
+              aes(y = polyarchy_control), color = 'steelblue')+
+  geom_smooth(data = . %>% filter(year_rel_polar > 0),
+              aes(y = polyarchy_control), color = 'steelblue')+
+  coord_cartesian(xlim = c(-10,10))+
+  geom_vline(xintercept = 0, linetype = 'dashed')
+
+
+####dif in dif - party disinfo
+#set level that counts as being "treated" with par_disinfo
+par_disinfo_threshold <- as.numeric(quantile(vdem_con$v2smpardom, probs = treatment_threshold, na.rm = TRUE))
+
+#label years relative to onset of party disinfo treatment 
+#only count as treatment if happens while inside a democratic spell,
+# and if first year of spell did not see high par_disinfo
+#but year count extends ten years prior and after the treatment, regardless of democratic status in those years
+vdem$year_rel_par_disinfo <- as.numeric(NA)
+vdem$par_disinfo_control_poly <- as.numeric(NA)
+for (i in seq_along(vdem$year)){
+  #skip country-years that are not in democratic spells or lack score
+  if (is.na(vdem$dem_spell_name[i])) next
+  if (is.na(vdem$v2smpardom[i])) next
+  
+  #find earliest year within each dem spell that crosses treatment threshold. 
+  par_disinfo_year_zero <- vdem %>% filter(dem_spell_name == vdem$dem_spell_name[i]) %>%
+    filter(v2smpardom >= par_disinfo_threshold) %>%
+    summarize(par_disinfo_year_zero = min(year, na.rm = TRUE)) %>%
+    pull(par_disinfo_year_zero)
+  
+  #skip country-years that are in democratic spells that began with high score
+  if (vdem$year[!is.na(vdem$dem_spell_name) &
+                vdem$dem_spell_name == vdem$dem_spell_name[i] &
+                !is.na(vdem$dem_spell_running) &
+                vdem$dem_spell_running == 0] == par_disinfo_year_zero) next
+  
+  #renumber infinite values as nulls
+  #value is Inf if spell never crossed threshold
+  par_disinfo_year_zero <- if_else((par_disinfo_year_zero == Inf | par_disinfo_year_zero == -Inf), 
+                                   as.numeric(NA),
+                                   par_disinfo_year_zero)
+  
+  if (is.na(par_disinfo_year_zero)) next
+  
+  #label year of onset as relative year zero
+  vdem$year_rel_par_disinfo[i] <- if_else(vdem$year[i] == par_disinfo_year_zero,
+                                          0,
+                                          as.numeric(NA))
+}
+for (i in seq_along(vdem$year)){
+  #locate treatment onset within 10 years of each country-year
+  par_disinfo_year_zero <- vdem %>% 
+    filter(country_name == vdem$country_name[i] &
+             year >= (vdem$year[i] - 10) &
+             year <= (vdem$year[i] + 10) &
+             year_rel_par_disinfo == 0) %>%
+    summarize(par_disinfo_year_zero = min(year)) %>%
+    pull(par_disinfo_year_zero)
+  
+  #renumber infinite values as nulls
+  #value is Inf if spell never crossed threshold
+  par_disinfo_year_zero <- if_else((par_disinfo_year_zero == Inf | par_disinfo_year_zero == -Inf), 
+                                   as.numeric(NA),
+                                   par_disinfo_year_zero)
+  
+  if (is.na(par_disinfo_year_zero)) next
+  
+  #label all preceding and following years in spell, relative to that zero  
+  vdem$year_rel_par_disinfo[i] = vdem$year[i] - par_disinfo_year_zero
+  
+  #log control value of par_disinfo among all consolidated democracies in same absolute year
+  vdem$par_disinfo_control_poly[i] <- if_else(is.na(vdem$year_rel_par_disinfo[i]),
+                                              as.numeric(NA),
+                                              mean(vdem$v2x_polyarchy[vdem$v2x_polyarchy >= dem_threshold & 
+                                                                        vdem$year == vdem$year[i] &
+                                                                        vdem$country_name != vdem$country_name[i]],
+                                                   na.rm = TRUE))
+}
+summary(vdem$year_rel_par_disinfo)
+summary(vdem$par_disinfo_control_poly)
+
+vdem %>%
+  filter(!is.na(year_rel_par_disinfo)) %>%
+  group_by(year_rel_par_disinfo) %>%
+  summarize(polyarchy_par_disinfo = mean(v2x_polyarchy, na.rm = TRUE),
+            polyarchy_control = mean(par_disinfo_control_poly, na.rm = TRUE)) %>%
+  ggplot(aes(x = year_rel_par_disinfo))+
+  geom_point(aes(y = polyarchy_par_disinfo), color = 'firebrick')+
+  geom_smooth(data = . %>% filter(year_rel_par_disinfo < 0),
+              aes(y = polyarchy_par_disinfo), color = 'firebrick')+
+  geom_smooth(data = . %>% filter(year_rel_par_disinfo > 0),
+              aes(y = polyarchy_par_disinfo), color = 'firebrick')+
+  geom_point(aes(y = polyarchy_control), color = 'steelblue')+
+  geom_smooth(data = . %>% filter(year_rel_par_disinfo < 0),
+              aes(y = polyarchy_control), color = 'steelblue')+
+  geom_smooth(data = . %>% filter(year_rel_par_disinfo > 0),
+              aes(y = polyarchy_control), color = 'steelblue')+
+  coord_cartesian(xlim = c(-10,10))+
+  geom_vline(xintercept = 0, linetype = 'dashed')
+
+
+####dif in dif - online consumption X fractionalization
+#set level that counts as being "treated" with frac_inter
+frac_inter_threshold <- as.numeric(quantile(vdem_con$smonexXsmmefra, probs = treatment_threshold, na.rm = TRUE))
+
+#label years relative to onset of frac_inter treatment 
+#only count as treatment if happens while inside a democratic spell,
+# and if first year of spell did not see high frac_inter
+#but year count extends ten years prior and after the treatment, regardless of democratic status in those years
+vdem$year_rel_frac_inter <- as.numeric(NA)
+vdem$frac_inter_control_poly <- as.numeric(NA)
+for (i in seq_along(vdem$year)){
+  #skip country-years that are not in democratic spells or lack score
+  if (is.na(vdem$dem_spell_name[i])) next
+  if (is.na(vdem$smonexXsmmefra[i])) next
+  
+  #find earliest year within each dem spell that crosses treatment threshold. 
+  frac_inter_year_zero <- vdem %>% filter(dem_spell_name == vdem$dem_spell_name[i]) %>%
+    filter(smonexXsmmefra >= frac_inter_threshold) %>%
+    summarize(frac_inter_year_zero = min(year, na.rm = TRUE)) %>%
+    pull(frac_inter_year_zero)
+  
+  #skip country-years that are in democratic spells that began with high score
+  if (vdem$year[!is.na(vdem$dem_spell_name) &
+                vdem$dem_spell_name == vdem$dem_spell_name[i] &
+                !is.na(vdem$dem_spell_running) &
+                vdem$dem_spell_running == 0] == frac_inter_year_zero) next
+  
+  #renumber infinite values as nulls
+  #value is Inf if spell never crossed threshold
+  frac_inter_year_zero <- if_else((frac_inter_year_zero == Inf | frac_inter_year_zero == -Inf), 
+                                  as.numeric(NA),
+                                  frac_inter_year_zero)
+  
+  if (is.na(frac_inter_year_zero)) next
+  
+  #label year of onset as relative year zero
+  vdem$year_rel_frac_inter[i] <- if_else(vdem$year[i] == frac_inter_year_zero,
+                                         0,
+                                         as.numeric(NA))
+}
+for (i in seq_along(vdem$year)){
+  #locate treatment onset within 10 years of each country-year
+  frac_inter_year_zero <- vdem %>% 
+    filter(country_name == vdem$country_name[i] &
+             year >= (vdem$year[i] - 10) &
+             year <= (vdem$year[i] + 10) &
+             year_rel_frac_inter == 0) %>%
+    summarize(frac_inter_year_zero = min(year)) %>%
+    pull(frac_inter_year_zero)
+  
+  #renumber infinite values as nulls
+  #value is Inf if spell never crossed threshold
+  frac_inter_year_zero <- if_else((frac_inter_year_zero == Inf | frac_inter_year_zero == -Inf), 
+                                  as.numeric(NA),
+                                  frac_inter_year_zero)
+  
+  if (is.na(frac_inter_year_zero)) next
+  
+  #label all preceding and following years in spell, relative to that zero  
+  vdem$year_rel_frac_inter[i] = vdem$year[i] - frac_inter_year_zero
+  
+  #log control value of frac_inter among all consolidated democracies in same absolute year
+  vdem$frac_inter_control_poly[i] <- if_else(is.na(vdem$year_rel_frac_inter[i]),
+                                             as.numeric(NA),
+                                             mean(vdem$v2x_polyarchy[vdem$v2x_polyarchy >= dem_threshold & 
+                                                                       vdem$year == vdem$year[i] &
+                                                                       vdem$country_name != vdem$country_name[i]],
+                                                  na.rm = TRUE))
+}
+summary(vdem$year_rel_frac_inter)
+summary(vdem$frac_inter_control_poly)
+
+vdem %>%
+  filter(!is.na(year_rel_frac_inter)) %>%
+  group_by(year_rel_frac_inter) %>%
+  summarize(polyarchy_frac_inter = mean(v2x_polyarchy, na.rm = TRUE),
+            polyarchy_control = mean(frac_inter_control_poly, na.rm = TRUE)) %>%
+  ggplot(aes(x = year_rel_frac_inter))+
+  geom_point(aes(y = polyarchy_frac_inter), color = 'firebrick')+
+  geom_smooth(data = . %>% filter(year_rel_frac_inter < 0),
+              aes(y = polyarchy_frac_inter), color = 'firebrick')+
+  geom_smooth(data = . %>% filter(year_rel_frac_inter > 0),
+              aes(y = polyarchy_frac_inter), color = 'firebrick')+
+  geom_point(aes(y = polyarchy_control), color = 'steelblue')+
+  geom_smooth(data = . %>% filter(year_rel_frac_inter < 0),
+              aes(y = polyarchy_control), color = 'steelblue')+
+  geom_smooth(data = . %>% filter(year_rel_frac_inter > 0),
+              aes(y = polyarchy_control), color = 'steelblue')+
+  coord_cartesian(xlim = c(-10,10))+
+  geom_vline(xintercept = 0, linetype = 'dashed')
 
 
 #notes----
 ##run matching analysis for polarization models
-
-##compare clientelism, polarization, and media trends in relative time preceding autocratization or erosion. 
- ###for control, use average score in same absolute year among all not-doomed consolidated democracies
 
 ##compare polyarchy scores in relative time before and after each treatment variable reached some critical threshold
  ###treatments are clientelism, consumption X fractionalization, party disinfo, and societal polarization
