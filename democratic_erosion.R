@@ -983,7 +983,7 @@ summary(pm7_full)
 
 ##search for most telling time lag----
 ###write custom function to find optimal time lag for regression on any set of variables
-test_lags <- function(df = vdem_con, vars) {
+test_lags <- function(df = vdem, vars) {
   model_results <- data.frame(time_lag = c(1:lag_range),
                               regression_coef = as.numeric(NA),
                               p_value = as.numeric(NA))
@@ -996,6 +996,7 @@ test_lags <- function(df = vdem_con, vars) {
       ungroup()
     wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
     wdf$year_factor <- as.factor(wdf$year)
+    wdf <- wdf %>% filter(consolidated_lhb == TRUE)
     
     wm <- lm(polyarchy_change ~ ., data = wdf[,c('polyarchy_change', vars, 'year_factor')])
     model_results$regression_coef[i] <- summary(wm)$coefficients[2,'Estimate'] #coefficient
@@ -1026,7 +1027,6 @@ test_lags(vars = c('smonexXsmfordom', 'v2smonex', 'v2smfordom', 'v2x_polyarchy',
 test_lags(vars = c('smmefraXsmfordom', 'v2smmefra', 'v2smfordom', 'v2x_polyarchy', 'e_migdppc'))
 test_lags(vars = c('clientXsmpolsoc', 'v2xnp_client', 'v2smpolsoc', 'v2x_polyarchy', 'e_migdppc'))
 test_lags(vars = c('smmefraXsmpolsoc', 'v2smmefra', 'v2smpolsoc', 'v2x_polyarchy', 'e_migdppc'))
- ####interacted variables that are not significant
 test_lags(vars = c('clientXresources', 'v2xnp_client', 'e_total_resources_percent', 'v2x_polyarchy', 'e_migdppc'))
 test_lags(vars = c('clientXcacamps', 'v2xnp_client', 'v2cacamps', 'v2x_polyarchy', 'e_migdppc'))
 
