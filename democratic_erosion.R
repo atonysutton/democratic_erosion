@@ -1118,7 +1118,7 @@ mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mi
 mimir %>% filter(v2smmefra %in% c(0.25, 0.75)) %>%
   ggplot(aes(x = v2smonex, y = expected_polyarchy, color = as.factor(v2smmefra)))+
   geom_line(size = 2.5)+
-  scale_color_manual(guide = 'none',   #remove one legend (color, alpha, fill...)
+  scale_color_manual(guide = 'none', 
                      values = c(media_color, disinfo_color))+
   theme_minimal()+
   labs(title = 'Online Use X Fractionalization',
@@ -1211,17 +1211,6 @@ mimir %>% filter(v2smpolsoc %in% c(0.25, 0.75)) %>%
   geom_line()
 
 
-
-#catch cursor
-
-
-
-
-
-
-
-
-
 ##difference in difference charts----
 ###observe polyarchy relative to treatments
 
@@ -1302,18 +1291,37 @@ vdem %>%
   summarize(polyarchy_client = mean(v2x_polyarchy, na.rm = TRUE),
             polyarchy_control = mean(client_control_poly, na.rm = TRUE)) %>%
   ggplot(aes(x = year_rel_client))+
-  geom_point(aes(y = polyarchy_client), color = 'firebrick')+
+  geom_point(aes(y = polyarchy_client), color = client_color, size = 4)+
   geom_smooth(data = . %>% filter(year_rel_client < 0),
-    aes(y = polyarchy_client), color = 'firebrick')+
+              method = 'loess',
+    aes(y = polyarchy_client), color = client_color, size = 2.5, fill = client_color)+
   geom_smooth(data = . %>% filter(year_rel_client > 0),
-              aes(y = polyarchy_client), color = 'firebrick')+
-  geom_point(aes(y = polyarchy_control), color = 'steelblue')+
+              method = 'loess',
+              aes(y = polyarchy_client), color = client_color, size = 2.5, fill = client_color)+
+  geom_point(aes(y = polyarchy_control), color = dem_color, size = 4)+
   geom_smooth(data = . %>% filter(year_rel_client < 0),
-              aes(y = polyarchy_control), color = 'steelblue')+
+              method = 'loess',
+              aes(y = polyarchy_control), color = dem_color, size = 2.5, fill = dem_color)+
   geom_smooth(data = . %>% filter(year_rel_client > 0),
-              aes(y = polyarchy_control), color = 'steelblue')+
-  coord_cartesian(xlim = c(-10,10))+
-  geom_vline(xintercept = 0, linetype = 'dashed')
+              method = 'loess',
+              aes(y = polyarchy_control), color = dem_color, size = 2.5, fill = dem_color)+
+  coord_cartesian(xlim = c(-10,10), ylim = c(0,1))+
+  geom_vline(xintercept = 0, linetype = 'dashed')+
+  annotate('text', label = 'Democracies with\n Clientelism', x = 5, y = 0.375, color = client_color, size = 8)+
+  annotate('text', label = 'Other Democracies', x = 5, y = 0.875, color = dem_color, size = 8)+
+  theme_minimal()+
+  labs(title = 'Onset of Clientelism',
+       subtitle = '  effect on democracy',
+       y = 'V-Dem Polyarchy Score',
+       x = 'Years, Relative to Onset')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16)) 
+ggsave(filename = "./visuals/client_dif.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
 
 
 ####dif in dif - polarization
@@ -1388,25 +1396,44 @@ for (i in seq_along(vdem$year)){
 summary(vdem$year_rel_polar)
 summary(vdem$polar_control_poly)
 
+
 vdem %>%
   filter(!is.na(year_rel_polar)) %>%
   group_by(year_rel_polar) %>%
   summarize(polyarchy_polar = mean(v2x_polyarchy, na.rm = TRUE),
             polyarchy_control = mean(polar_control_poly, na.rm = TRUE)) %>%
   ggplot(aes(x = year_rel_polar))+
-  geom_point(aes(y = polyarchy_polar), color = 'firebrick')+
+  geom_point(aes(y = polyarchy_polar), color = polar_color, size = 4)+
   geom_smooth(data = . %>% filter(year_rel_polar < 0),
-              aes(y = polyarchy_polar), color = 'firebrick')+
+              method = 'loess',
+              aes(y = polyarchy_polar), color = polar_color, size = 2.5, fill = polar_color)+
   geom_smooth(data = . %>% filter(year_rel_polar > 0),
-              aes(y = polyarchy_polar), color = 'firebrick')+
-  geom_point(aes(y = polyarchy_control), color = 'steelblue')+
+              method = 'loess',
+              aes(y = polyarchy_polar), color = polar_color, size = 2.5, fill = polar_color)+
+  geom_point(aes(y = polyarchy_control), color = dem_color, size = 4)+
   geom_smooth(data = . %>% filter(year_rel_polar < 0),
-              aes(y = polyarchy_control), color = 'steelblue')+
+              method = 'loess',
+              aes(y = polyarchy_control), color = dem_color, size = 2.5, fill = dem_color)+
   geom_smooth(data = . %>% filter(year_rel_polar > 0),
-              aes(y = polyarchy_control), color = 'steelblue')+
-  coord_cartesian(xlim = c(-10,10))+
-  geom_vline(xintercept = 0, linetype = 'dashed')
-
+              method = 'loess',
+              aes(y = polyarchy_control), color = dem_color, size = 2.5, fill = dem_color)+
+  coord_cartesian(xlim = c(-10,10), ylim = c(0,1))+
+  geom_vline(xintercept = 0, linetype = 'dashed')+
+  annotate('text', label = 'Democracies with\n Polarization', x = 5, y = 0.375, color = polar_color, size = 8)+
+  annotate('text', label = 'Other Democracies', x = 5, y = 0.875, color = dem_color, size = 8)+
+  theme_minimal()+
+  labs(title = 'Onset of Polarization',
+       subtitle = '  effect on democracy',
+       y = 'V-Dem Polyarchy Score',
+       x = 'Years, Relative to Onset')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16)) 
+ggsave(filename = "./visuals/polar_dif.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
 
 ####dif in dif - party disinfo
 #set level that counts as being "treated" with par_disinfo
@@ -1486,19 +1513,37 @@ vdem %>%
   summarize(polyarchy_par_disinfo = mean(v2x_polyarchy, na.rm = TRUE),
             polyarchy_control = mean(par_disinfo_control_poly, na.rm = TRUE)) %>%
   ggplot(aes(x = year_rel_par_disinfo))+
-  geom_point(aes(y = polyarchy_par_disinfo), color = 'firebrick')+
+  geom_point(aes(y = polyarchy_par_disinfo), color = disinfo_color, size = 4)+
   geom_smooth(data = . %>% filter(year_rel_par_disinfo < 0),
-              aes(y = polyarchy_par_disinfo), color = 'firebrick')+
+              method = 'loess',
+              aes(y = polyarchy_par_disinfo), color = disinfo_color, size = 2.5, fill = disinfo_color)+
   geom_smooth(data = . %>% filter(year_rel_par_disinfo > 0),
-              aes(y = polyarchy_par_disinfo), color = 'firebrick')+
-  geom_point(aes(y = polyarchy_control), color = 'steelblue')+
+              method = 'loess',
+              aes(y = polyarchy_par_disinfo), color = disinfo_color, size = 2.5, fill = disinfo_color)+
+  geom_point(aes(y = polyarchy_control), color = dem_color, size = 4)+
   geom_smooth(data = . %>% filter(year_rel_par_disinfo < 0),
-              aes(y = polyarchy_control), color = 'steelblue')+
+              method = 'loess',
+              aes(y = polyarchy_control), color = dem_color, size = 2.5, fill = dem_color)+
   geom_smooth(data = . %>% filter(year_rel_par_disinfo > 0),
-              aes(y = polyarchy_control), color = 'steelblue')+
-  coord_cartesian(xlim = c(-10,10))+
-  geom_vline(xintercept = 0, linetype = 'dashed')
-
+              method = 'loess',
+              aes(y = polyarchy_control), color = dem_color, size = 2.5, fill = dem_color)+
+  coord_cartesian(xlim = c(-10,10), ylim = c(0,1))+
+  geom_vline(xintercept = 0, linetype = 'dashed')+
+  annotate('text', label = 'Democracies with\n Disinformation', x = 5, y = 0.375, color = disinfo_color, size = 8)+
+  annotate('text', label = 'Other Democracies', x = 5, y = 0.875, color = dem_color, size = 8)+
+  theme_minimal()+
+  labs(title = 'Onset of Disinformation from Parties',
+       subtitle = '  effect on democracy',
+       y = 'V-Dem Polyarchy Score',
+       x = 'Years, Relative to Onset')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16)) 
+ggsave(filename = "./visuals/par_disinfo_dif.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
 
 ####dif in dif - online consumption X fractionalization
 #set level that counts as being "treated" with frac_inter
@@ -1578,21 +1623,44 @@ vdem %>%
   summarize(polyarchy_frac_inter = mean(v2x_polyarchy, na.rm = TRUE),
             polyarchy_control = mean(frac_inter_control_poly, na.rm = TRUE)) %>%
   ggplot(aes(x = year_rel_frac_inter))+
-  geom_point(aes(y = polyarchy_frac_inter), color = 'firebrick')+
+  geom_point(aes(y = polyarchy_frac_inter), color = media_color, size = 4)+
   geom_smooth(data = . %>% filter(year_rel_frac_inter < 0),
-              aes(y = polyarchy_frac_inter), color = 'firebrick')+
+              method = 'loess',
+              aes(y = polyarchy_frac_inter), color = media_color, size = 2.5, fill = media_color)+
   geom_smooth(data = . %>% filter(year_rel_frac_inter > 0),
-              aes(y = polyarchy_frac_inter), color = 'firebrick')+
-  geom_point(aes(y = polyarchy_control), color = 'steelblue')+
+              method = 'loess',
+              aes(y = polyarchy_frac_inter), color = media_color, size = 2.5, fill = media_color)+
+  geom_point(aes(y = polyarchy_control), color = dem_color, size = 4)+
   geom_smooth(data = . %>% filter(year_rel_frac_inter < 0),
-              aes(y = polyarchy_control), color = 'steelblue')+
+              method = 'loess',
+              aes(y = polyarchy_control), color = dem_color, size = 2.5, fill = dem_color)+
   geom_smooth(data = . %>% filter(year_rel_frac_inter > 0),
-              aes(y = polyarchy_control), color = 'steelblue')+
-  coord_cartesian(xlim = c(-10,10))+
-  geom_vline(xintercept = 0, linetype = 'dashed')
-
+              method = 'loess',
+              aes(y = polyarchy_control), color = dem_color, size = 2.5, fill = dem_color)+
+  coord_cartesian(xlim = c(-10,10), ylim = c(0,1))+
+  geom_vline(xintercept = 0, linetype = 'dashed')+
+  annotate('text', label = 'Democracies with\n Online\n Fractionalism', x = 5, y = 0.375, color = media_color, size = 8)+
+  annotate('text', label = 'Other Democracies', x = 5, y = 0.875, color = dem_color, size = 8)+
+  theme_minimal()+
+  labs(title = 'Onset of Online Consumpton and Fractionalism',
+       subtitle = '  effect on democracy',
+       y = 'V-Dem Polyarchy Score',
+       x = 'Years, Relative to Onset')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16)) 
+ggsave(filename = "./visuals/media_dif.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
 
 #notes----
+##sharpen interactive charting. now uses vdem_con. Switch to using full vdem but --after recording lagged polyarchy--
+ ##filter to only consolidated country-years
+
+##standardize x axis coordinates across charts for survival based on breadth 
+
 ##run matching analysis for polarization models
 
 ##compare polyarchy scores in relative time before and after each treatment variable reached some critical threshold
