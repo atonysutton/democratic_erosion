@@ -57,6 +57,9 @@ vdem$v2smfordom <- 1 - rescale(vdem$v2smfordom, to = c(0,1))
 vdem$v2psprlnks <- 1 - rescale(vdem$v2psprlnks, to = c(0,1))
 vdem$v2dlencmps <- 1 - rescale(vdem$v2dlencmps, to = c(0,1))
 
+##count GDP per capita in thousands of dollars, changing from single dollars
+vdem$e_migdppc <- vdem$e_migdppc / 1000 
+
 ##recalculate natural resources income as fraction of gdp
 vdem$e_total_resources_percent <- 
   case_when(is.na(vdem$e_migdppc) ~ as.numeric(NA),
@@ -1031,7 +1034,7 @@ test_lags(vars = c('clientXresources', 'v2xnp_client', 'e_total_resources_percen
 test_lags(vars = c('clientXcacamps', 'v2xnp_client', 'v2cacamps', 'v2x_polyarchy', 'e_migdppc'))
 
 
-##run models at best time lag
+##run models at best time lag of 10 years, and export results ----
 vdem <- vdem %>% 
   group_by(country_name) %>%
   arrange(year) %>%
@@ -1058,6 +1061,19 @@ summary(dm_print)
 fullm_print <- lm(polyarchy_change ~ v2xnp_client + v2cacamps + (v2smonex * v2smmefra) + v2smpardom + v2x_polyarchy + e_migdppc + as.factor(year), 
                   data = (vdem %>% filter(consolidated_lhb == TRUE)))
 summary(fullm_print)
+
+###save out model results
+stargazer(cm_print, pm_print, mm_print, dm_print, fullm_print, 
+          title = 'Solvents of Democracy',
+          keep = c('polyarchy_change', 'v2xnp_client', 'v2cacamps', 'v2smonex', 'v2smmefra', 'v2smpardom',
+                   'v2x_polyarchy', 'e_migdppc'),
+          dep.var.labels = 'Change in Polyarchy Score After 10 Years',
+          model.names = TRUE,
+          covariate.labels = c('Clientelism', 'Polarization', 'Online Media Consumption', 'Online Media Fractionalization', 'Party Disinformation',
+                               'Level of Democracy', 'GDP Per Capita', 'Online Media Consumption X Fractionalization'),
+          nobs = TRUE,
+          type = 'html',
+          out = './models/democracy_erosion_model_results.doc')
 
 
 ##chart interacted variables----
