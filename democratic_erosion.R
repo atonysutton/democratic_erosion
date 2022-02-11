@@ -1086,18 +1086,38 @@ mimir <- data.frame(v2smpardom = rep(point_scale, times = length(point_scale)),
                     v2smmefra = rep(point_scale, each = length(point_scale)),
                     v2x_polyarchy = median(vdem_con$v2x_polyarchy[df$v2x_polyarchy >= 0.5], na.rm = TRUE),
                     e_migdppc = median(vdem_con$e_migdppc[df$v2x_polyarchy >= 0.5], na.rm = TRUE))
-wdf <- vdem_con %>%
+wdf <- vdem %>%
   group_by(country_name) %>%
   arrange(year) %>%
   mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = lag_years)) %>%
-  ungroup()
+  ungroup()%>%
+  filter(consolidated_lhb == TRUE)
 wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
 wm <- lm(polyarchy_change ~ v2smpardom * v2smmefra + v2x_polyarchy + e_migdppc, data = wdf)
 
 mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mimir))
 mimir %>% filter(v2smmefra %in% c(0.25, 0.75)) %>%
 ggplot(aes(x = v2smpardom, y = expected_polyarchy, color = as.factor(v2smmefra)))+
-  geom_line()
+  geom_line(size = 2.5)+
+  scale_color_manual(values = c(disinfo_color, polar_color),
+                     labels = c('low', 'high'))+
+  theme_minimal()+
+  labs(title = 'Party Disinformation X Fractionalization',
+       subtitle = '  affect democracy 10 years later',
+       y = 'Predicted Polyarchy Change',
+       x = 'Party Disinformation',
+       color = 'Fractionalization')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        axis.title.y = element_text(margin = margin(r = 8)),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16),
+        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 16))
+ggsave(filename = "./visuals/model_pardisinfo_fract_inter.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
 
 ##online consumption by media fractionalization
 mimir <- data.frame(v2smonex = rep(point_scale, times = length(point_scale)),
@@ -1143,72 +1163,152 @@ mimir <- data.frame(v2smonex = rep(point_scale, times = length(point_scale)),
                     v2smfordom = rep(point_scale, each = length(point_scale)),
                     v2x_polyarchy = median(vdem_con$v2x_polyarchy[df$v2x_polyarchy >= 0.5], na.rm = TRUE),
                     e_migdppc = median(vdem_con$e_migdppc[df$v2x_polyarchy >= 0.5], na.rm = TRUE))
-wdf <- vdem_con %>%
+wdf <- vdem %>%
   group_by(country_name) %>%
   arrange(year) %>%
   mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = lag_years)) %>%
-  ungroup()
+  ungroup()%>%
+  filter(consolidated_lhb == TRUE)
 wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
 wm <- lm(polyarchy_change ~ v2smonex * v2smfordom + v2x_polyarchy + e_migdppc, data = wdf)
 
 mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mimir))
 mimir %>% filter(v2smfordom %in% c(0.25, 0.75)) %>%
   ggplot(aes(x = v2smonex, y = expected_polyarchy, color = as.factor(v2smfordom)))+
-  geom_line()
+  geom_line(size = 2.5)+
+  scale_color_manual(values = c(media_color, disinfo_color),
+                     labels = c('low', 'high'))+
+  theme_minimal()+
+  labs(title = 'Online Consumption X Foreign Disinformation',
+       subtitle = '  affect democracy 10 years later',
+       y = 'Predicted Polyarchy Change',
+       x = 'Online Consumption',
+       color = 'Foreign\n Disinfo')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        axis.title.y = element_text(margin = margin(r = 8)),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16),
+        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 16))
+ggsave(filename = "./visuals/model_online_fordisinfo_inter.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
 
 ##foreign disinformation by media fractionalization
 mimir <- data.frame(v2smfordom = rep(point_scale, times = length(point_scale)),
                     v2smmefra = rep(point_scale, each = length(point_scale)),
                     v2x_polyarchy = median(vdem_con$v2x_polyarchy[df$v2x_polyarchy >= 0.5], na.rm = TRUE),
                     e_migdppc = median(vdem_con$e_migdppc[df$v2x_polyarchy >= 0.5], na.rm = TRUE))
-wdf <- vdem_con %>%
+wdf <- vdem %>%
   group_by(country_name) %>%
   arrange(year) %>%
   mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = lag_years)) %>%
-  ungroup()
+  ungroup()%>%
+  filter(consolidated_lhb == TRUE)
 wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
 wm <- lm(polyarchy_change ~ v2smfordom * v2smmefra + v2x_polyarchy + e_migdppc, data = wdf)
 
 mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mimir))
 mimir %>% filter(v2smmefra %in% c(0.25, 0.75)) %>%
   ggplot(aes(x = v2smfordom, y = expected_polyarchy, color = as.factor(v2smmefra)))+
-  geom_line()
+  geom_line(size = 2.5)+
+  scale_color_manual(values = c(disinfo_color, polar_color),
+                     labels = c('low', 'high'))+
+  theme_minimal()+
+  labs(title = 'Foreign Disinformation X Fractionalization',
+       subtitle = '  affect democracy 10 years later',
+       y = 'Predicted Polyarchy Change',
+       x = 'Foreign Disinformation',
+       color = 'Fractionalization')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        axis.title.y = element_text(margin = margin(r = 8)),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16),
+        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 16))
+ggsave(filename = "./visuals/model_fordisinfo_fract_inter.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
 
 ##clientelism by polarized society
 mimir <- data.frame(v2xnp_client = rep(point_scale, times = length(point_scale)),
                     v2smpolsoc = rep(point_scale, each = length(point_scale)),
                     v2x_polyarchy = median(vdem_con$v2x_polyarchy[df$v2x_polyarchy >= 0.5], na.rm = TRUE),
                     e_migdppc = median(vdem_con$e_migdppc[df$v2x_polyarchy >= 0.5], na.rm = TRUE))
-wdf <- vdem_con %>%
+wdf <- vdem %>%
   group_by(country_name) %>%
   arrange(year) %>%
   mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = lag_years)) %>%
-  ungroup()
+  ungroup()%>%
+  filter(consolidated_lhb == TRUE)
 wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
 wm <- lm(polyarchy_change ~ v2xnp_client * v2smpolsoc + v2x_polyarchy + e_migdppc, data = wdf)
 
 mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mimir))
 mimir %>% filter(v2smpolsoc %in% c(0.25, 0.75)) %>%
   ggplot(aes(x = v2xnp_client, y = expected_polyarchy, color = as.factor(v2smpolsoc)))+
-  geom_line()
+  geom_line(size = 2.5)+
+  scale_color_manual(values = c(client_color, polar_color),
+                     labels = c('low', 'high'))+
+  theme_minimal()+
+  labs(title = 'Clientelism X Polarization',
+       subtitle = '  affect democracy 10 years later',
+       y = 'Predicted Polyarchy Change',
+       x = 'Clientelism',
+       color = 'Polarization')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        axis.title.y = element_text(margin = margin(r = 8)),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16),
+        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 16))
+ggsave(filename = "./visuals/model_client_pol_inter.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
 
 ##media fractionalization by polarized society
 mimir <- data.frame(v2smmefra = rep(point_scale, times = length(point_scale)),
                     v2smpolsoc = rep(point_scale, each = length(point_scale)),
                     v2x_polyarchy = median(vdem_con$v2x_polyarchy[df$v2x_polyarchy >= 0.5], na.rm = TRUE),
                     e_migdppc = median(vdem_con$e_migdppc[df$v2x_polyarchy >= 0.5], na.rm = TRUE))
-wdf <- vdem_con %>%
+wdf <- vdem %>%
   group_by(country_name) %>%
   arrange(year) %>%
   mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = lag_years)) %>%
-  ungroup()
+  ungroup()%>%
+  filter(consolidated_lhb == TRUE)
 wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
 wm <- lm(polyarchy_change ~ v2smmefra * v2smpolsoc + v2x_polyarchy + e_migdppc, data = wdf)
 
 mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mimir))
 mimir %>% filter(v2smpolsoc %in% c(0.25, 0.75)) %>%
   ggplot(aes(x = v2smmefra, y = expected_polyarchy, color = as.factor(v2smpolsoc)))+
-  geom_line()
+  geom_line(size = 2.5)+
+  scale_color_manual(values = c(media_color, polar_color),
+                     labels = c('low', 'high'))+
+  theme_minimal()+
+  labs(title = 'Fractionalization X Polarization',
+       subtitle = '  affect democracy 10 years later',
+       y = 'Predicted Polyarchy Change',
+       x = 'Fractionalization',
+       color = 'Polarization')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        axis.title.y = element_text(margin = margin(r = 8)),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16),
+        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 16))
+ggsave(filename = "./visuals/model_fract_pol_inter.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
 
 
 ##difference in difference charts----
