@@ -1755,6 +1755,69 @@ ggsave(filename = "./visuals/media_dif.jpg",
        height = 6,
        units = 'in')
 
+#charts for case studies ----
+case_plot <-
+  ggplot(data = (vdem %>% filter(country_name == country_case &
+                                 year >= 1981)),
+       aes(x = year))+
+  geom_line(aes(y = v2x_polyarchy), color = dem_color, size = 2.5)+
+  geom_line(aes(y = v2xnp_client), color = client_color, size = 2.5, linetype = 'dotted')+
+  geom_line(aes(y = v2cacamps), color = polar_color, size = 2.5, linetype = 'twodash')+
+  geom_line(aes(y = (v2smonex * v2smpardom)), color = disinfo_color, size = 2.5, linetype = 'dashed')+
+  #annotate('text', label = 'Democracies with\n Online\n Fractionalism', x = 5, y = 0.375, color = media_color, size = 8)+
+  theme_minimal()+
+  labs(title = paste0(country_case, "'s History"),
+       subtitle  = " of Democracy and its Solvents")+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16)) 
+
+
+country_case <- 'Venezuela'
+case_plot
+ggsave(filename = "./visuals/case_venezuela.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+
+country_case <- 'Brazil'
+case_plot
+ggsave(filename = "./visuals/case_brazil.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+
+country_case <- 'Uruguay'
+case_plot
+ggsave(filename = "./visuals/case_uruguay.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+
+country_case <- 'Hungary'
+case_plot
+ggsave(filename = "./visuals/case_uruguay.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+
+country_case <- 'Poland'
+case_plot
+ggsave(filename = "./visuals/case_uruguay.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+
+country_case <- 'Estonia'
+case_plot
+ggsave(filename = "./visuals/case_uruguay.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+
+
+
 #notes----
 ##sharpen interactive charting. now uses vdem_con. Switch to using full vdem but --after recording lagged polyarchy--
  ##filter to only consolidated country-years
