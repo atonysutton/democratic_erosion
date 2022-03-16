@@ -1756,62 +1756,77 @@ ggsave(filename = "./visuals/media_dif.jpg",
        units = 'in')
 
 #charts for case studies ----
-case_plot <-
+
+##generic code for plot
+plot_case <- function(country_case){
+  max_year <- max(vdem$year, na.rm = TRUE)
+  case_labels_df <- data.frame(variable = c('Democracy', 'Clientelism', 'Polarization', 'Disinformation'),
+                               last_value = c(vdem$v2x_polyarchy[vdem$year == max_year &
+                                                                   vdem$country_name == country_case],
+                                              vdem$v2xnp_client[vdem$year == max_year&
+                                                                  vdem$country_name == country_case],
+                                              vdem$v2cacamps[vdem$year == max_year&
+                                                               vdem$country_name == country_case],
+                                              vdem$v2smonex[vdem$year == max_year&
+                                                              vdem$country_name == country_case] *
+                                                vdem$v2smpardom[vdem$year == max_year&
+                                                                  vdem$country_name == country_case]),
+                               color = c(dem_color, client_color, polar_color, disinfo_color))
+  
   ggplot(data = (vdem %>% filter(country_name == country_case &
-                                 year >= 1981)),
-       aes(x = year))+
-  geom_line(aes(y = v2x_polyarchy), color = dem_color, size = 2.5)+
-  geom_line(aes(y = v2xnp_client), color = client_color, size = 2.5, linetype = 'dotted')+
-  geom_line(aes(y = v2cacamps), color = polar_color, size = 2.5, linetype = 'twodash')+
-  geom_line(aes(y = (v2smonex * v2smpardom)), color = disinfo_color, size = 2.5, linetype = 'dashed')+
-  #annotate('text', label = 'Democracies with\n Online\n Fractionalism', x = 5, y = 0.375, color = media_color, size = 8)+
-  theme_minimal()+
-  labs(title = paste0(country_case, "'s History"),
-       subtitle  = " of Democracy and its Solvents")+
-  theme(title = element_text(size = 20, face = 'bold'),
-        axis.title = element_blank(),
-        panel.grid.minor = element_blank(),
-        axis.text = element_text(size = 16)) 
+                                   year >= 1981)),
+         aes(x = year))+
+    geom_line(aes(y = v2x_polyarchy), color = dem_color, size = 2.5)+
+    geom_line(aes(y = v2xnp_client), color = client_color, size = 2.5, linetype = 'dotted')+
+    geom_line(aes(y = v2cacamps), color = polar_color, size = 2.5, linetype = 'twodash')+
+    geom_line(aes(y = (v2smonex * v2smpardom)), color = disinfo_color, size = 2.5, linetype = 'dashed')+
+    coord_cartesian(xlim = c(1980, 2020))+
+    scale_y_continuous(sec.axis = dup_axis(
+      breaks = case_labels_df$last_value,
+      labels = case_labels_df$variable))+
+    theme_minimal()+
+    labs(title = paste0(country_case, "'s History"),
+         subtitle  = " of Democracy and its Solvents")+
+    theme(title = element_text(size = 20, face = 'bold'),
+          axis.title = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.text = element_text(size = 16,
+                                   color = c(dem_color, client_color, polar_color, disinfo_color))) 
+}
 
-
-country_case <- 'Venezuela'
-case_plot
+##apply to desired cases
+plot_case(country_case = 'Venezuela')
 ggsave(filename = "./visuals/case_venezuela.jpg",
        width = 10,
        height = 6,
        units = 'in')
 
-country_case <- 'Brazil'
-case_plot
+plot_case(country_case = 'Brazil')
 ggsave(filename = "./visuals/case_brazil.jpg",
        width = 10,
        height = 6,
        units = 'in')
 
-country_case <- 'Uruguay'
-case_plot
+plot_case(country_case = 'Uruguay')
 ggsave(filename = "./visuals/case_uruguay.jpg",
        width = 10,
        height = 6,
        units = 'in')
 
-country_case <- 'Hungary'
-case_plot
-ggsave(filename = "./visuals/case_uruguay.jpg",
+plot_case(country_case = 'Hungary')
+ggsave(filename = "./visuals/case_hungary.jpg",
        width = 10,
        height = 6,
        units = 'in')
 
-country_case <- 'Poland'
-case_plot
-ggsave(filename = "./visuals/case_uruguay.jpg",
+plot_case(country_case = 'Poland')
+ggsave(filename = "./visuals/case_poland.jpg",
        width = 10,
        height = 6,
        units = 'in')
 
-country_case <- 'Estonia'
-case_plot
-ggsave(filename = "./visuals/case_uruguay.jpg",
+plot_case(country_case = 'Estonia')
+ggsave(filename = "./visuals/case_estonia.jpg",
        width = 10,
        height = 6,
        units = 'in')
