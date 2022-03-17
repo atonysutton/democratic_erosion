@@ -1780,7 +1780,7 @@ plot_case <- function(country_case){
     geom_line(aes(y = v2xnp_client), color = client_color, size = 2.5, linetype = 'dotted')+
     geom_line(aes(y = v2cacamps), color = polar_color, size = 2.5, linetype = 'twodash')+
     geom_line(aes(y = (v2smonex * v2smpardom)), color = disinfo_color, size = 2.5, linetype = 'dashed')+
-    coord_cartesian(xlim = c(1980, 2020))+
+    coord_cartesian(xlim = c(1980, 2020), ylim = c(0,1))+
     scale_y_continuous(sec.axis = dup_axis(
       breaks = case_labels_df$last_value,
       labels = case_labels_df$variable))+
@@ -1790,8 +1790,8 @@ plot_case <- function(country_case){
     theme(title = element_text(size = 20, face = 'bold'),
           axis.title = element_blank(),
           panel.grid.minor = element_blank(),
-          axis.text = element_text(size = 16,
-                                   color = c(dem_color, client_color, polar_color, disinfo_color))) 
+          axis.text = element_text(size = 16),
+          axis.text.y.right = element_text(size = 16, color = c(dem_color, client_color, polar_color, disinfo_color))) 
 }
 
 ##apply to desired cases
