@@ -726,6 +726,16 @@ ggsave(filename = "./visuals/par_disinfo_chronology.jpg",
        height = 6,
        units = 'in')
 
+##demonstrate need for higher threshold than simply 0.5
+vdem %>% filter(country_name == 'Albania', between(year, 2003, 2020)) %>%
+  select(country_name, year, v2x_polyarchy) %>% 
+  print(n = 20)
+
+vdem %>% filter(country_name == 'Kosovo', between(year, 2001, 2020)) %>%
+  select(country_name, year, v2x_polyarchy) %>% 
+  print(n = 20)
+  
+
 #predict eventual autocratization or erosion ----
 
 ##produce a few illustrative statistics
