@@ -1757,6 +1757,10 @@ ggsave(filename = "./visuals/media_dif.jpg",
 
 #charts for case studies ----
 
+vdem %>% filter(year == 1995,
+                country_name %in% c('Venezuela', 'Brazil', 'Uruguay', 'Hungary', 'Poland', 'Estonia')) %>%
+  select(country_name, e_migdppc)
+
 ##generic code for plot
 plot_case <- function(country_case){
   max_year <- max(vdem$year, na.rm = TRUE)
