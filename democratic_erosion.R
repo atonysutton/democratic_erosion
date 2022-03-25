@@ -11,6 +11,7 @@ treatment_threshold = 0.9 #percentile that distinguishes high clientelism/disinf
 lag_range = 10 #test time lags of dependent variables from 1 to this many years
 
 dem_color = 'dodgerblue'
+interlock_color = 'midnightblue'
 client_color = 'sienna'
 media_color = 'forestgreen'
 disinfo_color = 'olivedrab3'
@@ -578,7 +579,7 @@ ggplot(data = vdem, aes(x = v2x_polyarchy))+
   geom_histogram(bins = 20, fill = 'dodgerblue', color = 'white')+
   theme_minimal()+
   labs(title = 'Distribution of Democracy',
-       subtitle = '  across all country-years',
+       subtitle = '  all countries, 1789-2020',
        y = '',
        x = 'V-Dem Polyarchy Score')+
   theme(title = element_text(size = 20, face = 'bold'),
@@ -610,6 +611,48 @@ ggsave(filename = "./visuals/democracy_histogram_dems.jpg",
        width = 10,
        height = 6,
        units = 'in')
+
+ggplot(data = (vdem %>% filter(consolidated_lhb == TRUE)), aes(x = v2x_polyarchy))+
+  geom_histogram(bins = 20, fill = 'dodgerblue', color = 'white')+
+  theme_minimal()+
+  labs(title = 'Distribution of Democracy',
+       subtitle = '  interlocked democracies, 1900-2020',
+       y = '',
+       x = 'V-Dem Polyarchy Score')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.text.y = element_blank()) 
+ggsave(filename = "./visuals/democracy_histogram_interlocked.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+
+
+ggplot(data = vdem, aes(x = year, y = v2x_polyarchy))+
+  geom_point(aes(color = consolidated_lhb == TRUE, alpha = consolidated_lhb == TRUE))+
+  scale_color_manual(values = c(dem_color, interlock_color), na.value = 'gray50')+ #unconsolidated, consolidated, nondem
+  scale_alpha_manual(values = c(0.1, 0.3), na.value = 0.06)+
+  theme_minimal()+
+  labs(title = 'Democracy over Time',
+       #subtitle = '  noting interlocked democracies',
+       x = '',
+       y = 'V-Dem Polyarchy Score')+
+  annotate('text', label = 'Democracies', color = dem_color, size = 7, x = 1825, y = 0.625)+
+  annotate('text', label = 'Interlocked\nDemocracies', color = interlock_color, size = 7, x = 1860, y = 0.825)+
+  theme(legend.position = 'none',
+        title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title.y = element_text(margin = margin(r = 8))) 
+ggsave(filename = "./visuals/democracy_interlocked_over_time.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+
 
 vdem %>% 
   ggplot(aes(x = v2xnp_client))+
