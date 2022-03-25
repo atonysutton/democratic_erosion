@@ -516,14 +516,18 @@ vdem %>%
   summarize(n_distinct(dem_spell_name))
   
 
+interlocked_list <-
 vdem %>% 
   filter(consolidated_lhb == TRUE) %>% 
-  group_by(dem_spell_name) %>%
-  summarize(outcome = case_when(sum(dem_spell_outcome == 'autocracy') > 0 ~ 'autocratized',
+  group_by('Democratic Spell' = dem_spell_name) %>%
+  summarize(Outcome = case_when(sum(dem_spell_outcome == 'autocracy') > 0 ~ 'autocratized',
                                 sum(dem_spell_erosion == TRUE) > 0 ~ 'eroded',
-                                TRUE ~ 'remained_democratic')) %>%
-  arrange(outcome) %>%
+                                TRUE ~ 'remained democratic')) %>%
+  arrange('Democratic Spell') %>%
   print(n = 100)
+
+interlocked_list
+write.table(interlocked_list, file = "./visuals/interlocked_list.txt", sep = ",", quote = FALSE, row.names = F)
 
 ###examine cases where consolidated regime autocratized
  ###note that some (eg Denmark 1902) ended in foreign occupation
@@ -773,11 +777,11 @@ ggsave(filename = "./visuals/par_disinfo_chronology.jpg",
        units = 'in')
 
 vdem %>%
-  filter(consolidated_lhb == TRUE) %>% 
+  filter(ever_consolidated == TRUE) %>% 
   group_by(dem_spell_name) %>% 
   summarize(age = max(dem_spell_length), outcome = (dem_spell_outcome)) %>% 
   ggplot(aes(x = age))+
-  geom_histogram(aes(fill = outcome), binwidth = 20)
+  geom_histogram(aes(fill = outcome), binwidth = 20, color = 'white')
 
 ##demonstrate need for higher threshold than simply 0.5
 vdem %>% filter(country_name == 'Albania', between(year, 2003, 2020)) %>%

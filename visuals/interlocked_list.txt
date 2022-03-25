@@ -1,0 +1,57 @@
+Democratic Spell,Outcome
+Argentina 1984,remained democratic
+Armenia 2019,remained democratic
+Australia 1858,remained democratic
+Austria 1945,remained democratic
+Belgium 1947,remained democratic
+Bolivia 1986,autocratized
+Brazil 1987,eroded
+Canada 1921,remained democratic
+Chile 1990,remained democratic
+Costa Rica 1950,remained democratic
+Croatia 2000,eroded
+Cyprus 1974,remained democratic
+Czech Republic 1990,remained democratic
+Denmark 1902,autocratized
+Denmark 1946,remained democratic
+Estonia 1993,remained democratic
+Finland 1918,eroded
+France 1947,eroded
+Germany 1949,remained democratic
+Greece 1975,remained democratic
+Hungary 1990,autocratized
+Iceland 1904,remained democratic
+Ireland 1922,remained democratic
+Israel 1949,remained democratic
+Italy 1947,remained democratic
+Jamaica 1984,remained democratic
+Japan 1952,remained democratic
+Latvia 1923,autocratized
+Latvia 1990,remained democratic
+Lithuania 1990,remained democratic
+Luxembourg 1946,remained democratic
+Malta 1963,remained democratic
+Mauritius 1968,eroded
+Netherlands 1946,remained democratic
+New Zealand 1861,remained democratic
+Norway 1946,remained democratic
+Panama 1991,remained democratic
+Peru 2001,remained democratic
+Poland 1990,eroded
+Portugal 1976,remained democratic
+Romania 1991,remained democratic
+Slovakia 1993,remained democratic
+Slovenia 1990,eroded
+South Africa 1995,remained democratic
+South Korea 1988,eroded
+Spain 1978,remained democratic
+Suriname 1992,remained democratic
+Sweden 1922,remained democratic
+Switzerland 1849,remained democratic
+Taiwan 1996,remained democratic
+Trinidad and Tobago 1962,remained democratic
+United Kingdom 1919,remained democratic
+United States of America 1921,remained democratic
+Uruguay 1939,autocratized
+Uruguay 1985,remained democratic
+Venezuela 1959,autocratized
