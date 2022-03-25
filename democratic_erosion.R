@@ -1129,6 +1129,10 @@ fullm_print <- lm(polyarchy_change ~ v2xnp_client + v2cacamps + (v2smonex * v2sm
                   data = (vdem %>% filter(consolidated_lhb == TRUE)))
 summary(fullm_print)
 
+threem_print <- lm(polyarchy_change ~ v2xnp_client + v2cacamps + v2smpardom + v2x_polyarchy + e_migdppc + as.factor(year), 
+                         data = (vdem %>% filter(consolidated_lhb == TRUE)))
+summary(threem_print)
+
 ###save out model results
 stargazer(cm_print, pm_print, mm_print, dm_print, fullm_print, 
           title = 'Solvents of Democracy',
@@ -1141,6 +1145,18 @@ stargazer(cm_print, pm_print, mm_print, dm_print, fullm_print,
           nobs = TRUE,
           type = 'html',
           out = './models/democracy_erosion_model_results.doc')
+
+stargazer(cm_print, pm_print, dm_print, threem_print, 
+          title = 'Solvents of Democracy',
+          keep = c('polyarchy_change', 'v2xnp_client', 'v2cacamps', 'v2smpardom',
+                   'v2x_polyarchy', 'e_migdppc'),
+          dep.var.labels = 'Change in Polyarchy Score After 10 Years',
+          model.names = TRUE,
+          covariate.labels = c('Clientelism', 'Polarization', 'Party Disinformation',
+                               'Level of Democracy', 'GDP Per Capita'),
+          nobs = TRUE,
+          type = 'html',
+          out = './models/corrosive_factors_model_results.doc')
 
 
 ##chart interacted variables----
