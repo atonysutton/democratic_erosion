@@ -1393,6 +1393,44 @@ ggsave(filename = "./visuals/model_fract_pol_inter.jpg",
        height = 6,
        units = 'in')
 
+##polarized society by media fractionalization
+mimir <- data.frame(v2cacamps = rep(point_scale, times = length(point_scale)),
+                     v2smmefra = rep(point_scale, each = length(point_scale)),
+                    v2x_polyarchy = median(vdem_con$v2x_polyarchy[df$v2x_polyarchy >= 0.5], na.rm = TRUE),
+                    e_migdppc = median(vdem_con$e_migdppc[df$v2x_polyarchy >= 0.5], na.rm = TRUE))
+wdf <- vdem %>%
+  group_by(country_name) %>%
+  arrange(year) %>%
+  mutate(v2x_polyarchy_lagged = lead(v2x_polyarchy, n = lag_years)) %>%
+  ungroup()%>%
+  filter(consolidated_lhb == TRUE)
+wdf$polyarchy_change <- wdf$v2x_polyarchy_lagged - wdf$v2x_polyarchy
+wm <- lm(polyarchy_change ~ (v2cacamps * v2smmefra) + v2x_polyarchy + e_migdppc, data = wdf)
+
+mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mimir))
+mimir %>% filter(v2smmefra %in% c(0.25, 0.75)) %>%
+  ggplot(aes(x = v2cacamps, y = expected_polyarchy, color = as.factor(v2smmefra)))+
+  geom_line(size = 2.5)+
+  scale_color_manual(values = c(media_color, polar_color),
+                     labels = c('low', 'high'))+
+  theme_minimal()+
+  labs(title = 'Polarization X Fractionalization',
+       subtitle = '  affect democracy 10 years later',
+       y = 'Predicted Polyarchy Change',
+       x = 'Polarization',
+       color = 'Fractionalization')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        axis.title.y = element_text(margin = margin(r = 8)),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16),
+        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 16))
+ggsave(filename = "./visuals/model_pol_fract_inter.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+
 
 ##difference in difference charts----
 ###observe polyarchy relative to treatments
