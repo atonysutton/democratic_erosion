@@ -250,6 +250,7 @@ height_threshold <- vdem %>%
   filter(outcome_rate < survival_threshold) %>%
   summarize(last_cohort = max(polyarchy_cohort)) %>%
   pull(last_cohort) + 0.01
+height_threshold
   
 ##chart outcome by democracy spell length
 vdem %>% 
@@ -291,6 +292,7 @@ length_threshold <- vdem %>%
   filter(outcome_rate >= survival_threshold) %>%
   summarize(last_cohort = min(dem_spell_running)) %>%
   pull(last_cohort)
+length_threshold
 
 ##compare vdem high level indexes
  ##the four other varieties of democracy tend to score lower than polyarchy
@@ -560,6 +562,7 @@ vdem_con <- vdem %>%
 ##year range
 summary(vdem$year) #full data set
 vdem %>% filter(v2x_polyarchy >= dem_threshold) %>% summarize(min(year)) #first year with democracy
+vdem %>% filter(consolidated_lhb == TRUE) %>% summarize(min(year)) #first year with democracy
 vdem %>% filter(!is.na(v2xnp_client)) %>% summarize(min(year), max(year), n_distinct(country_name))
 vdem %>% filter(!is.na(v2cacamps)) %>% summarize(min(year), max(year), n_distinct(country_name))
 vdem %>% filter(!is.na(smonexXsmmefra)) %>% summarize(min(year), max(year), n_distinct(country_name))
