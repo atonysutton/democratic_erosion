@@ -1411,7 +1411,7 @@ mimir <- mimir %>% mutate(expected_polyarchy = predict(object = wm, newdata = mi
 mimir %>% filter(v2smmefra %in% c(0.25, 0.75)) %>%
   ggplot(aes(x = v2cacamps, y = expected_polyarchy, color = as.factor(v2smmefra)))+
   geom_line(size = 2.5)+
-  scale_color_manual(values = c(media_color, polar_color),
+  scale_color_manual(values = c(disinfo_color, polar_color),
                      labels = c('low', 'high'))+
   theme_minimal()+
   labs(title = 'Polarization X Fractionalization',
