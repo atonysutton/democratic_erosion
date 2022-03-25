@@ -772,6 +772,13 @@ ggsave(filename = "./visuals/par_disinfo_chronology.jpg",
        height = 6,
        units = 'in')
 
+vdem %>%
+  filter(consolidated_lhb == TRUE) %>% 
+  group_by(dem_spell_name) %>% 
+  summarize(age = max(dem_spell_length), outcome = (dem_spell_outcome)) %>% 
+  ggplot(aes(x = age))+
+  geom_histogram(aes(fill = outcome), binwidth = 20)
+
 ##demonstrate need for higher threshold than simply 0.5
 vdem %>% filter(country_name == 'Albania', between(year, 2003, 2020)) %>%
   select(country_name, year, v2x_polyarchy) %>% 
