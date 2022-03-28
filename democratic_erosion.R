@@ -1950,7 +1950,8 @@ ggsave(filename = "./visuals/case_poland.jpg",
        height = 6,
        units = 'in')
 
-plot_case(country_case = 'Estonia')
+plot_case(country_case = 'Estonia')+
+  scale_x_continuous(limits = c(1992, 2020))
 ggsave(filename = "./visuals/case_estonia.jpg",
        width = 10,
        height = 6,
