@@ -1202,6 +1202,31 @@ ggsave(filename = "./visuals/model_pardisinfo_fract_inter.jpg",
        height = 6,
        units = 'in')
 
+mimir %>% filter(v2smmefra %in% c(0.25, 0.75)) %>%
+  ggplot(aes(x = v2smpardom, y = expected_polyarchy, color = as.factor(v2smmefra)))+
+  geom_line(size = 2.5)+
+  scale_color_manual(values = c(disinfo_color, polar_color),
+                     labels = c('low', 'high'))+
+  theme_minimal()+
+  labs(title = 'Party Disinformation X Fractionalization',
+       subtitle = '  affect democracy 10 years later',
+       y = 'Predicted Polyarchy Change',
+       x = 'Party Disinformation',
+       color = 'Fractionalization')+
+  annotate('text', label = 'low fractionalization', size = 8, color = disinfo_color, x = 0.75, y = -0.0125)+
+  annotate('text', label = 'high fractionalization', size = 8, color = polar_color, x = 0.25, y = -0.0625)+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        axis.title.y = element_text(margin = margin(r = 8)),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16),
+        legend.position = 'none')
+ggsave(filename = "./visuals/model_pardisinfo_fract_inter_nolegend.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+
+
 ##online consumption by media fractionalization
 mimir <- data.frame(v2smonex = rep(point_scale, times = length(point_scale)),
                     v2smmefra = rep(point_scale, each = length(point_scale)),
@@ -1317,6 +1342,31 @@ ggsave(filename = "./visuals/model_fordisinfo_fract_inter.jpg",
        height = 6,
        units = 'in')
 
+mimir %>% filter(v2smmefra %in% c(0.25, 0.75)) %>%
+  ggplot(aes(x = v2smfordom, y = expected_polyarchy, color = as.factor(v2smmefra)))+
+  geom_line(size = 2.5)+
+  scale_color_manual(values = c(disinfo_color, polar_color),
+                     labels = c('low', 'high'))+
+  theme_minimal()+
+  labs(title = 'Foreign Disinformation X Fractionalization',
+       subtitle = '  affect democracy 10 years later',
+       y = 'Predicted Polyarchy Change',
+       x = 'Foreign Disinformation',
+       color = 'Fractionalization')+
+  annotate('text', label = 'low fractionalization', size = 8, color = disinfo_color, x = 0.5, y = -0.01)+
+  annotate('text', label = 'high fractionalization', size = 8, color = polar_color, x = 0.4, y = -0.05)+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        axis.title.y = element_text(margin = margin(r = 8)),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16),
+        legend.position = 'none')
+ggsave(filename = "./visuals/model_fordisinfo_fract_inter_nolegend.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+
+  
 ##clientelism by polarized society
 mimir <- data.frame(v2xnp_client = rep(point_scale, times = length(point_scale)),
                     v2smpolsoc = rep(point_scale, each = length(point_scale)),
@@ -1354,6 +1404,31 @@ ggsave(filename = "./visuals/model_client_pol_inter.jpg",
        width = 10,
        height = 6,
        units = 'in')
+
+mimir %>% filter(v2smpolsoc %in% c(0.25, 0.75)) %>%
+  ggplot(aes(x = v2xnp_client, y = expected_polyarchy, color = as.factor(v2smpolsoc)))+
+  geom_line(size = 2.5)+
+  scale_color_manual(values = c(client_color, polar_color),
+                     labels = c('low', 'high'))+
+  theme_minimal()+
+  labs(title = 'Clientelism X Polarization',
+       subtitle = '  affect democracy 10 years later',
+       y = 'Predicted Polyarchy Change',
+       x = 'Clientelism',
+       color = 'Polarization')+
+  annotate('text', label = 'low polarization', size = 8, color = client_color, x = 0.625, y = 0.02)+
+  annotate('text', label = 'high polarization', size = 8, color = polar_color, x = 0.25, y = -0.15)+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        axis.title.y = element_text(margin = margin(r = 8)),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16),
+        legend.position = 'none')
+ggsave(filename = "./visuals/model_client_pol_inter_nolegend.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
+
 
 ##media fractionalization by polarized society
 mimir <- data.frame(v2smmefra = rep(point_scale, times = length(point_scale)),
@@ -1431,6 +1506,29 @@ ggsave(filename = "./visuals/model_pol_fract_inter.jpg",
        height = 6,
        units = 'in')
 
+mimir %>% filter(v2smmefra %in% c(0.25, 0.75)) %>%
+  ggplot(aes(x = v2cacamps, y = expected_polyarchy, color = as.factor(v2smmefra)))+
+  geom_line(size = 2.5)+
+  scale_color_manual(values = c(disinfo_color, polar_color),
+                     labels = c('low', 'high'))+
+  theme_minimal()+
+  labs(title = 'Polarization X Fractionalization',
+       subtitle = '  affect democracy 10 years later',
+       y = 'Predicted Polyarchy Change',
+       x = 'Polarization',
+       color = 'Fractionalization')+
+  annotate('text', label = 'low fractionalization', size = 8, color = disinfo_color, x = 0.625, y = 0.025)+
+  annotate('text', label = 'high fractionalization', size = 8, color = polar_color, x = 0.25, y = -0.075)+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18, face = 'bold'),
+        axis.title.y = element_text(margin = margin(r = 8)),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16),
+        legend.position = 'none')
+ggsave(filename = "./visuals/model_pol_fract_inter_nolegend.jpg",
+       width = 10,
+       height = 6,
+       units = 'in')
 
 ##difference in difference charts----
 ###observe polyarchy relative to treatments
