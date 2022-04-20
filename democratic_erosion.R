@@ -34,7 +34,7 @@ library(MatchIt)
 #                        v2x_polyarchy, v2x_libdem, v2x_partipdem, v2x_delibdem, v2x_egaldem,
 #                        v2xnp_client, v2elvotbuy, v2dlencmps, v2psprlnks, v2x_elecreg,
 #                        v2smonex, v2smmefra, v2smgovdom, v2smpardom, v2smfordom, 
-#                        v2cacamps, v2smpolsoc, v2smpolhate,
+#                        v2cacamps, v2smpolsoc, v2smpolhate, v2psplats,
 #                        e_migdpgro, e_migdppc,
 #                        e_mipopula, e_miurbani,
 #                        e_total_fuel_income_pc, e_total_resources_income_pc)
@@ -57,6 +57,7 @@ vdem$v2smpardom <- 1 - rescale(vdem$v2smpardom, to = c(0,1))
 vdem$v2smfordom <- 1 - rescale(vdem$v2smfordom, to = c(0,1))
 vdem$v2psprlnks <- 1 - rescale(vdem$v2psprlnks, to = c(0,1))
 vdem$v2dlencmps <- 1 - rescale(vdem$v2dlencmps, to = c(0,1))
+vdem$v2psplats <- 1 - rescale(vdem$v2psplats, to = c(0,1))
 
 ##count GDP per capita in thousands of dollars, changing from single dollars
 vdem$e_migdppc <- vdem$e_migdppc / 1000 
@@ -2056,18 +2057,26 @@ ggsave(filename = "./visuals/case_estonia.jpg",
        units = 'in')
 
 
+vdem %>% filter(country_name == 'Venezuela', year >= 1950) %>%
+  ggplot(aes(x = year, y = v2psplats))+
+  geom_line(color = polar_color, size = 2.5)+
+  theme_minimal()+
+  coord_cartesian(ylim = c(0,1))+
+  labs(title = 'Party Platforms Indistinct in Venezuela',
+       y = 'Differentiation of Party Platforms',
+       x = '')+
+  theme(title = element_text(size = 20, face = 'bold'),
+        axis.title = element_text(size = 18),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 16),
+        axis.title.y = element_text(margin = margin(r = 8)))
+
+
 
 #notes----
-##sharpen interactive charting. now uses vdem_con. Switch to using full vdem but --after recording lagged polyarchy--
- ##filter to only consolidated country-years
-
 ##standardize x axis coordinates across charts for survival based on breadth 
 
 ##run matching analysis for polarization models
-
-##compare polyarchy scores in relative time before and after each treatment variable reached some critical threshold
- ###treatments are clientelism, consumption X fractionalization, party disinfo, and societal polarization
- ###control is polyarchy in all consolidated democracies still below that treatment threshold in same absolute year
 
 ##for all consolidated spells, summarize treatment variables in first year of spell. 
  ###some doomed democracies might have been born flawed rather than suffering onset of treatment (eg Venezuela 1959)
