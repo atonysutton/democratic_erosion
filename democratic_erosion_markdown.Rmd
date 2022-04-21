@@ -1816,7 +1816,7 @@ Label years relative to onset of clientelism treatment
  and if first year of spell did not see high clientelism
  but year count extends ten years prior and after the treatment, 
  regardless of democratic status in those years
-```{r}
+```{r warning=FALSE, message=FALSE, error=FALSE}
 vdem$year_rel_client <- as.numeric(NA)
 vdem$client_control_poly <- as.numeric(NA)
 for (i in seq_along(vdem$year)){
@@ -1884,7 +1884,7 @@ summary(vdem$client_control_poly)
 ```
 
 Chart dif in dif - clientelism
-```{r}
+```{r warning=FALSE, message=FALSE, error=FALSE}
 vdem %>%
   filter(!is.na(year_rel_client)) %>%
   group_by(year_rel_client) %>%
@@ -1936,7 +1936,7 @@ Label years relative to onset of polarization treatment
  but year count extends ten years prior and after the treatment, 
  regardless of democratic status in those years
 
-```{r}
+```{r warning=FALSE, message=FALSE, error=FALSE}
 vdem$year_rel_polar <- as.numeric(NA)
 vdem$polar_control_poly <- as.numeric(NA)
 for (i in seq_along(vdem$year)){
@@ -2003,7 +2003,7 @@ summary(vdem$polar_control_poly)
 ```
 
 Chart dif in dif - polarization
-```{r}
+```{r warning=FALSE, message=FALSE, error=FALSE}
 vdem %>%
   filter(!is.na(year_rel_polar)) %>%
   group_by(year_rel_polar) %>%
@@ -2055,7 +2055,7 @@ Label years relative to onset of party disinfo treatment
  and if first year of spell did not see high par_disinfo
  but year count extends ten years prior and after the treatment, 
  regardless of democratic status in those years
-```{r}
+```{r warning=FALSE, message=FALSE, error=FALSE}
 vdem$year_rel_par_disinfo <- as.numeric(NA)
 vdem$par_disinfo_control_poly <- as.numeric(NA)
 for (i in seq_along(vdem$year)){
@@ -2122,7 +2122,7 @@ summary(vdem$par_disinfo_control_poly)
 ```
 
 Chart dif in dif - disinfo
-```{r}
+```{r warning=FALSE, message=FALSE, error=FALSE}
 vdem %>%
   filter(!is.na(year_rel_par_disinfo)) %>%
   group_by(year_rel_par_disinfo) %>%
@@ -2175,7 +2175,7 @@ Label years relative to onset of frac_inter treatment
  and if first year of spell did not see high frac_inter
  but year count extends ten years prior and after the treatment, 
  regardless of democratic status in those years
-```{r}
+```{r warning=FALSE, message=FALSE, error=FALSE}
 vdem$year_rel_frac_inter <- as.numeric(NA)
 vdem$frac_inter_control_poly <- as.numeric(NA)
 for (i in seq_along(vdem$year)){
@@ -2242,7 +2242,7 @@ summary(vdem$frac_inter_control_poly)
 ```
 
 Chart dif in dif - online consumption times fractionalization
-```{r}
+```{r warning=FALSE, message=FALSE, error=FALSE}
 vdem %>%
   filter(!is.na(year_rel_frac_inter)) %>%
   group_by(year_rel_frac_inter) %>%
